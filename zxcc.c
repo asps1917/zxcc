@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+//
+// トークナイザ
+//
+
 // トークンの種類
 typedef enum {
     TK_RESERVED, // 記号
@@ -122,7 +126,10 @@ Token *tokenize() {
     return head.next;
 }
 
+//
 // パーサ
+//
+
 // 抽象構文木のノードの種類
 typedef enum {
     ND_ADD, // +
@@ -161,6 +168,7 @@ Node *expr();
 Node *mul();
 Node *primary();
 
+// expr = mul ("+" mul | "-" mul)*
 Node *expr() {
     Node *node = mul();
 
@@ -174,6 +182,7 @@ Node *expr() {
     }
 }
 
+// mul = primary ("*" primary | "/" primary)*
 Node *mul() {
     Node *node = primary();
 
@@ -187,6 +196,7 @@ Node *mul() {
     }
 }
 
+// primary = num | "(" expr ")"
 Node *primary() {
     // 次のトークンが"("なら、"(" expr ")"のはず
     if(consume('(')) {
@@ -199,7 +209,11 @@ Node *primary() {
     return new_node_num(expect_number());
 }
 
+//
 // コードジェネレータ
+//
+
+// 抽象構文木の根ノードを受け取りスタックマシンのコードを生成する
 void gen(Node *node) {
     if(node->kind == ND_NUM) {
         printf("  push %d\n", node->val);

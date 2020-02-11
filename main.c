@@ -7,12 +7,12 @@ int main(int argc, char **argv) {
     }
 
     // トークナイズしてパースする
+    // 結果はcodeに保存される
     user_input = argv[1];
     token = tokenize();
-    Node *node = expr();
+    program();
 
-    // 抽象構文木を下りながらコード生成
-    codegen(node);
+    codegen();
 
     return 0;
 }

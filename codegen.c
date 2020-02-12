@@ -85,10 +85,11 @@ void codegen() {
     printf("main:\n");
 
     // プロローグ
-    // 変数26個分の領域を確保する
+    // localsにパース処理中に最後に割り当てたローカル変数のポインタが代入されているため、
+    // locals->offsetが必要なローカル変数用領域のサイズと等しい。
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
-    printf("  sub rsp, 208\n");
+    printf("  sub rsp, %d\n", locals->offset);
 
     // 先頭の式から順にコード生成
     for(int i = 0; code[i]; i++) {

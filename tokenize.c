@@ -121,9 +121,17 @@ Token *tokenize() {
             continue;
         }
 
+        // 4文字の演算子
+        if(strncmp("else", p, 4) == 0) {
+            cur = new_token(TK_RESERVED, cur, p, 4);
+            p += 4;
+            continue;
+        }
+
         // 2文字の演算子
         if(strncmp("<=", p, 2) == 0 || strncmp(">=", p, 2) == 0 ||
-           strncmp("==", p, 2) == 0 || strncmp("!=", p, 2) == 0) {
+           strncmp("==", p, 2) == 0 || strncmp("!=", p, 2) == 0 ||
+           strncmp("if", p, 2) == 0) {
             cur = new_token(TK_RESERVED, cur, p, 2);
             p += 2;
             continue;

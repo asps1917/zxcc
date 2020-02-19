@@ -13,6 +13,7 @@ int main(int argc, char **argv) {
 
     program();
 
+    label_end_num = 0;
     codegen();
 
     return 0;

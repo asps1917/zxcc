@@ -49,5 +49,9 @@ try 3 'return a = 3;'
 try 14 'a = 3; b = 5 * 6 - 8; return a + b / 2;'
 try 6 'foo = 1;bar = 2 + 3;return foo + bar;'
 try 24 'foo_123 = 12;_aiueo99 = -1 + 3;return foo_123*_aiueo99;'
+try 3 'if (1) return 3;'
+try 3 'if (1-1) return 2; return 3;'
+try 2 'if (2-1) return 2; return 3;'
+try 2 'foo=3; foo=foo-3; if (foo) return 1; else return 2;'
 
 echo OK

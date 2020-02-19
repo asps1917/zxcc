@@ -50,6 +50,17 @@ Token *consume_ident() {
     return NULL;
 }
 
+// 次のトークンがreturnの場合、トークンを1つ読み進めてそのトークンを返す。
+// それ以外の場合にはNULLを返す。
+Token *consume_return() {
+    if(token->kind == TK_RETURN) {
+        Token *retval = token;
+        token = token->next;
+        return retval;
+    }
+    return NULL;
+}
+
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
 void expect(char *op) {
@@ -100,6 +111,13 @@ Token *tokenize() {
         // 空白文字をスキップ
         if(isspace(*p)) {
             p++;
+            continue;
+        }
+
+        // return
+        if(strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
+            cur = new_token(TK_RETURN, cur, p, 6);
+            p += 6;
             continue;
         }
 

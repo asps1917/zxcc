@@ -16,36 +16,38 @@ try() {
   fi
 }
 
-try 0 "0;"
-try 42 "42;"
-try 21 "5+20-4;"
-try 41 " 12 + 34 - 5 ;"
-try 47 '5+6*7;'
-try 15 '5*(9-6);'
-try 4 '(3+5)/2;'
-try 10 '-10+20;'
-try 20 '-(-3*+5)+5;'
+try 0 "return 0;"
+try 42 "return 42;"
+try 21 "return 5+20-4;"
+try 41 "return 12 + 34 - 5 ;"
+try 47 'return 5+6*7;'
+try 15 'return 5*(9-6);'
+try 4 'return (3+5)/2;'
+try 10 'return -10+20;'
+try 20 'return -(-3*+5)+5;'
 
-try 0 '0==1;'
-try 1 '42==42;'
-try 1 '0!=1;'
-try 0 '42!=42;'
-try 1 '0<1;'
-try 0 '1<1;'
-try 0 '2<1;'
-try 1 '0<=1;'
-try 1 '1<=1;'
-try 0 '2<=1;'
-try 1 '1>0;'
-try 0 '1>1;'
-try 0 '1>2;'
-try 1 '1>=0;'
-try 1 '1>=1;'
-try 0 '1>=2;'
-try 5 '1;3;5;'
-try 3 'a = 3;'
-try 14 'a = 3; b = 5 * 6 - 8; a + b / 2;'
-try 6 'foo = 1;bar = 2 + 3;foo + bar;'
-try 24 'foo_123 = 12;_aiueo99 = -1 + 3;foo_123*_aiueo99;'
+try 0 'return 0==1;'
+try 1 'return 42==42;'
+try 1 'return 0!=1;'
+try 0 'return 42!=42;'
+try 1 'return 0<1;'
+try 0 'return 1<1;'
+try 0 'return 2<1;'
+try 1 'return 0<=1;'
+try 1 'return 1<=1;'
+try 0 'return 2<=1;'
+try 1 'return 1>0;'
+try 0 'return 1>1;'
+try 0 'return 1>2;'
+try 1 'return 1>=0;'
+try 1 'return 1>=1;'
+try 0 'return 1>=2;'
+try 1 'return 1;3;return 5;'
+try 3 '1;return 3;5;'
+try 5 '1;3;return 5;'
+try 3 'return a = 3;'
+try 14 'a = 3; b = 5 * 6 - 8; return a + b / 2;'
+try 6 'foo = 1;bar = 2 + 3;return foo + bar;'
+try 24 'foo_123 = 12;_aiueo99 = -1 + 3;return foo_123*_aiueo99;'
 
 echo OK

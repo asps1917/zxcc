@@ -16,6 +16,7 @@ static void gen_lval(Node *node) {
 
 // 抽象構文木の根ノードを受け取りスタックマシンのコードを生成する
 static void gen(Node *node) {
+    int label_num;
     switch(node->kind) {
     case ND_NUM:
         printf("  push %d\n", node->val);
@@ -45,7 +46,7 @@ static void gen(Node *node) {
         gen(node->cond);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        int label_num = label_seq_num++;
+        label_num = label_seq_num++;
         if(node->els) {
             // elseあり
             printf("  je  .Lelse%03d\n", label_num);
@@ -60,6 +61,17 @@ static void gen(Node *node) {
             gen(node->then);
             printf(".Lend%03d:\n", label_num);
         }
+        return;
+    case ND_WHILE:
+        label_num = label_seq_num++;
+        printf(".Lbegin%03d:\n", label_num);
+        gen(node->cond);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je  .Lend%03d\n", label_num);
+        gen(node->then);
+        printf("  jmp .Lbegin%03d\n", label_num);
+        printf(".Lend%03d:\n", label_num);
         return;
     }
 

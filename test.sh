@@ -53,5 +53,7 @@ try 3 'if (1) return 3;'
 try 3 'if (1-1) return 2; return 3;'
 try 2 'if (2-1) return 2; return 3;'
 try 2 'foo=3; foo=foo-3; if (foo) return 1; else return 2;'
-
+try 1 'while(1) return 1; return 2;'
+try 2 'while(0) return 1; return 2;'
+try 8 'foo = 20; while(foo>=10) foo = foo-3; return foo;'
 echo OK

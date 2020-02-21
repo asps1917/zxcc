@@ -100,6 +100,21 @@ static bool is_alpha(char c) {
 // 文字がアルファベットか、もしくは数字であるか判定する
 static bool is_alnum(char c) { return is_alpha(c) || ('0' <= c && c <= '9'); }
 
+// 文字列が予約語か判定する。
+// 予約語だった場合その予約語を返す。そうでない場合、NULLを返す。
+static char *is_reserved(char *p) {
+    static char *keywords[] = {"if", "else"};
+
+    for(int i = 0; i < sizeof(keywords) / sizeof(*keywords); i++) {
+        int len_keyword = strlen(keywords[i]);
+        if(strncmp(p, keywords[i], len_keyword) == 0 &&
+           !is_alnum(p[len_keyword])) {
+            return keywords[i];
+        }
+    }
+    return NULL;
+}
+
 // 入力文字列user_inputをトークナイズしてそれを返す
 Token *tokenize() {
     char *p = user_input;

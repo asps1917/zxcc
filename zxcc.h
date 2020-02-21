@@ -100,5 +100,5 @@ void program();
 // codegen.c
 //
 
-extern int label_end_num;
+extern int label_seq_num;
 void codegen();

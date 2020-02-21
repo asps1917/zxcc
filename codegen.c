@@ -1,8 +1,7 @@
 #include "zxcc.h"
 
 // labelの通し番号
-int label_end_num;
-int label_else_num;
+int label_seq_num;
 
 // nodeを左辺値として評価し、そのアドレスをスタックにpushするコードを生成する。
 // nodeが変数ではない場合エラー終了させる。
@@ -46,19 +45,20 @@ static void gen(Node *node) {
         gen(node->cond);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
+        int label_num = label_seq_num++;
         if(node->els) {
             // elseあり
-            printf("  je  .Lelse%03d\n", label_else_num++);
+            printf("  je  .Lelse%03d\n", label_num);
             gen(node->then);
-            printf("  jmp .Lend%03d\n", label_end_num++);
-            printf(".Lelse%03d:\n", label_else_num - 1);
+            printf("  jmp .Lend%03d\n", label_num);
+            printf(".Lelse%03d:\n", label_num);
             gen(node->els);
-            printf(".Lend%03d:\n", label_end_num - 1);
+            printf(".Lend%03d:\n", label_num);
         } else {
             // elseなし
-            printf("  je  .Lend%03d\n", label_end_num++);
+            printf("  je  .Lend%03d\n", label_num);
             gen(node->then);
-            printf(".Lend%03d:\n", label_end_num - 1);
+            printf(".Lend%03d:\n", label_num);
         }
         return;
     }

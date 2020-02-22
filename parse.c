@@ -14,17 +14,21 @@ static LVar *find_lvar(Token *tok) {
     return NULL;
 }
 
-static Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+static Node *alloc_node(NodeKind kind) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = kind;
+    return node;
+}
+
+static Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+    Node *node = alloc_node(kind);
     node->lhs = lhs;
     node->rhs = rhs;
     return node;
 }
 
 static Node *new_node_num(int val) {
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_NUM;
+    Node *node = alloc_node(ND_NUM);
     node->val = val;
     return node;
 }
@@ -64,13 +68,11 @@ static Node *stmt() {
     Node *node;
 
     if(consume_return()) {
-        node = calloc(1, sizeof(Node));
-        node->kind = ND_RETURN;
+        node = alloc_node(ND_RETURN);
         node->lhs = expr();
         expect(";");
     } else if(consume("if")) {
-        node = calloc(1, sizeof(Node));
-        node->kind = ND_IF;
+        node = alloc_node(ND_IF);
         expect("(");
         node->cond = expr();
         expect(")");
@@ -80,15 +82,13 @@ static Node *stmt() {
             node->els = stmt();
         }
     } else if(consume("while")) {
-        node = calloc(1, sizeof(Node));
-        node->kind = ND_WHILE;
+        node = alloc_node(ND_WHILE);
         expect("(");
         node->cond = expr();
         expect(")");
         node->then = stmt();
     } else if(consume("for")) {
-        node = calloc(1, sizeof(Node));
-        node->kind = ND_FOR;
+        node = alloc_node(ND_FOR);
         expect("(");
         if(!consume(";")) {
             // 初期化式が存在する
@@ -206,8 +206,7 @@ static Node *primary() {
     // identトークンのチェック
     Token *tok = consume_ident();
     if(tok) {
-        Node *node = calloc(1, sizeof(Node));
-        node->kind = ND_LVAR;
+        Node *node = alloc_node(ND_LVAR);
 
         LVar *lvar = find_lvar(tok);
         if(lvar) {

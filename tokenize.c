@@ -169,6 +169,7 @@ Token *tokenize() {
             continue;
         }
 
+        // 数値
         if(isdigit(*p)) {
             cur = new_token(TK_NUM, cur, p, 0);
             char *q = p;

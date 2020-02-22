@@ -210,8 +210,12 @@ static Node *primary() {
 
         LVar *lvar = find_lvar(tok);
         if(lvar) {
+            // 割り当て済みのローカル変数
+            // スタック上のアドレスを取得する
             node->offset = lvar->offset;
         } else {
+            // 初めて出現したローカル変数
+            // スタック上のローカル変数用領域に割り当てる
             lvar = calloc(1, sizeof(LVar));
             lvar->next = locals;
             lvar->name = tok->str;

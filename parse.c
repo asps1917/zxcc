@@ -71,7 +71,10 @@ static Node *stmt() {
         node = alloc_node(ND_RETURN);
         node->lhs = expr();
         expect(";");
-    } else if(consume("if")) {
+        return node;
+    }
+
+    if(consume("if")) {
         node = alloc_node(ND_IF);
         expect("(");
         node->cond = expr();
@@ -81,13 +84,19 @@ static Node *stmt() {
         if(consume("else")) {
             node->els = stmt();
         }
-    } else if(consume("while")) {
+        return node;
+    }
+
+    if(consume("while")) {
         node = alloc_node(ND_WHILE);
         expect("(");
         node->cond = expr();
         expect(")");
         node->then = stmt();
-    } else if(consume("for")) {
+        return node;
+    }
+
+    if(consume("for")) {
         node = alloc_node(ND_FOR);
         expect("(");
         if(!consume(";")) {
@@ -106,11 +115,11 @@ static Node *stmt() {
             expect(")");
         }
         node->then = stmt();
-    } else {
-        node = expr();
-        expect(";");
+        return node;
     }
 
+    node = expr();
+    expect(";");
     return node;
 }
 

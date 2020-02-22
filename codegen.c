@@ -73,6 +73,27 @@ static void gen(Node *node) {
         printf("  jmp .Lbegin%03d\n", label_num);
         printf(".Lend%03d:\n", label_num);
         return;
+    case ND_FOR:
+        label_num = label_seq_num++;
+        if(node->init) {
+            gen(node->init);
+        }
+        printf(".Lbegin%03d:\n", label_num);
+        if(node->cond) {
+            // cond==NULLの場合.LendXXXラベルへのジャンプ処理を出力しない(=無限ループ)
+            gen(node->cond);
+            printf("  pop rax\n");
+            printf("  cmp rax, 0\n");
+            printf("  je  .Lend%03d\n", label_num);
+        }
+
+        gen(node->then);
+        if(node->post) {
+            gen(node->post);
+        }
+        printf("  jmp .Lbegin%03d\n", label_num);
+        printf(".Lend%03d:\n", label_num);
+        return;
     }
 
     gen(node->lhs);

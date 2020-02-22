@@ -58,6 +58,7 @@ void program() {
 // stmt = "return" expr ";"
 //      | "if" "(" expr ")" stmt ("else" stmt)?
 //      | "while" "(" expr ")" stmt
+//      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //      | expr ";"
 static Node *stmt() {
     Node *node;
@@ -84,6 +85,26 @@ static Node *stmt() {
         expect("(");
         node->cond = expr();
         expect(")");
+        node->then = stmt();
+    } else if(consume("for")) {
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_FOR;
+        expect("(");
+        if(!consume(";")) {
+            // 初期化式が存在する
+            node->init = expr();
+            expect(";");
+        }
+        if(!consume(";")) {
+            // ループの継続条件式が存在する
+            node->cond = expr();
+            expect(";");
+        }
+        if(!consume(")")) {
+            // ループ一周終了時の実行処理が存在する
+            node->post = expr();
+            expect(")");
+        }
         node->then = stmt();
     } else {
         node = expr();

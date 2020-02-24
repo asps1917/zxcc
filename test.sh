@@ -2,6 +2,12 @@
 cat <<EOF | gcc -xc -c -o tmp2.o -
 int ret3() { return 3; }
 int ret5() { return 5; }
+int add(int x, int y) { return x+y; }
+int sub(int x, int y) { return x-y; }
+
+int add6(int a, int b, int c, int d, int e, int f) {
+  return a+b+c+d+e+f;
+}
 EOF
 
 try() {
@@ -80,6 +86,9 @@ try 21 'a = 0; b=0; while(1) {if(a==10) b = b+1; if(a==20) return b; a =a+1; b=b
 
 try 3 'return ret3();'
 try 5 'return ret5();'
+try 8 'return add(3, 5);'
+try 2 'return sub(5, 3);'
+try 21 'return add6(1,2,3,4,5,6);'
 
 
 echo OK

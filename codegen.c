@@ -3,6 +3,8 @@
 // labelの通し番号
 int label_seq_num;
 
+static char *regs_for_args[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
 static void debug_printf(char *fmt, ...);
 
 // nodeを左辺値として評価し、そのアドレスをスタックにpushするコードを生成する。
@@ -113,14 +115,27 @@ static void gen(Node *node) {
         return;
     case ND_BLOCK:
         debug_printf("gen - ND_BLOCK");
-        for(Node *cur = node->next_stmt; cur; cur = cur->next_stmt) {
+        for(Node *cur = node->next; cur; cur = cur->next) {
             gen(cur);
         }
         debug_printf("gen - ND_BLOCK end");
         return;
     case ND_FUNC:
+        debug_printf("gen - ND_FUNC");
+        int args_count = 0;
+        for(Node *cur = node->args; cur; cur = cur->next) {
+            gen(cur);
+            args_count++;
+        }
+        if(args_count > 6) {
+            error("%s: , 7個以上の引数を持つ関数です", node->func_name);
+        }
+        for(int i = args_count - 1; i >= 0; i--) {
+            printf("  pop %s\n", regs_for_args[i]);
+        }
         printf("  call %s\n", node->func_name);
         printf("  push rax\n");
+        debug_printf("gen - ND_FUNC end");
         return;
     }
 

@@ -85,11 +85,11 @@ struct Node {
     Node *init; // for文の初期化処理
     Node *post; // for文のループ一周終了時処理
 
-    // ブロック用
-    Node *next_stmt;
+    Node *next;
 
     // 関数呼び出し
     char *func_name;
+    Node *args;
 };
 
 typedef struct LVar LVar;

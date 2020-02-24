@@ -83,8 +83,8 @@ static Node *stmt() {
             if(consume("}")) {
                 return node;
             }
-            cur->next_stmt = stmt();
-            cur = cur->next_stmt;
+            cur->next = stmt();
+            cur = cur->next;
         }
     }
 
@@ -217,8 +217,24 @@ static Node *unary() {
     return primary();
 }
 
+// func_args = "(" (assign ("," assign)*)? ")"
+static Node *func_args() {
+    // "("はprimary関数内でconsume済みなので")"の存在をチェックする
+    if(consume(")")) {
+        return NULL;
+    }
+    Node *head = assign();
+    Node *cur = head;
+    while(consume(",")) {
+        cur->next = assign();
+        cur = cur->next;
+    }
+    expect(")");
+    return head;
+}
+
 // primary = num
-//         | ident ("(" ")")?
+//         | ident func_args?
 //         | "(" expr ")"
 static Node *primary() {
     // 次のトークンが"("なら、"(" expr ")"のはず
@@ -235,9 +251,9 @@ static Node *primary() {
 
         // 関数呼び出し
         if(consume("(")) {
-            expect(")");
             node = alloc_node(ND_FUNC);
             node->func_name = strndup(tok->str, tok->len);
+            node->args = func_args();
             return node;
         }
 

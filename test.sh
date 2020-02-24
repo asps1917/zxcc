@@ -1,10 +1,15 @@
 #!/bin/bash
+cat <<EOF | gcc -xc -c -o tmp2.o -
+int ret3() { return 3; }
+int ret5() { return 5; }
+EOF
+
 try() {
   expected="$1"
   input="$2"
 
   ./zxcc "$input" > tmp.s
-  gcc -o tmp tmp.s
+  gcc -static -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"
 
@@ -30,6 +35,7 @@ try 0 'return 0==1;'
 try 1 'return 42==42;'
 try 1 'return 0!=1;'
 try 0 'return 42!=42;'
+
 try 1 'return 0<1;'
 try 0 'return 1<1;'
 try 0 'return 2<1;'
@@ -42,27 +48,38 @@ try 0 'return 1>2;'
 try 1 'return 1>=0;'
 try 1 'return 1>=1;'
 try 0 'return 1>=2;'
+
 try 1 'return 1;3;return 5;'
 try 3 '1;return 3;5;'
 try 5 '1;3;return 5;'
+
 try 3 'return a = 3;'
 try 14 'a = 3; b = 5 * 6 - 8; return a + b / 2;'
 try 6 'foo = 1;bar = 2 + 3;return foo + bar;'
 try 24 'foo_123 = 12;_aiueo99 = -1 + 3;return foo_123*_aiueo99;'
+
 try 3 'if (1) return 3;'
 try 3 'if (1-1) return 2; return 3;'
 try 2 'if (2-1) return 2; return 3;'
 try 2 'foo=3; foo=foo-3; if (foo) return 1; else return 2;'
+
 try 1 'while(1) return 1; return 2;'
 try 2 'while(0) return 1; return 2;'
 try 8 'foo = 20; while(foo>=10) foo = foo-3; return foo;'
+
 try 10 'limit = 10; for(a=0; a<limit; a = a+1) b=1; return a;'
 try 10 'limit = 10; a = 0; for(; a<limit; a = a+1) b=1; return a;'
 try 0 'limit = 10;for(a = 0;; a = a+1) return a;'
 try 10 'limit = 10; for(a=0; a<limit;) a = a+1; return a;'
 try 10 'limit = 10; for(;;) return limit; return 0;'
+
 try 30 '{limit = 10; b=0;} for(a=0; a<limit; a = a+1) {b=b+1; b=b+2; } return b;'
 try 10 'a = 0; while(1) {if(a==10) return a; a =a+1;}'
 try 20 'a = 0; b=0; while(1) {if(a==10) {return b; } a =a+1; b = b+2;}'
 try 21 'a = 0; b=0; while(1) {if(a==10) b = b+1; if(a==20) return b; a =a+1; b=b+1;}'
+
+try 3 'return ret3();'
+try 5 'return ret5();'
+
+
 echo OK

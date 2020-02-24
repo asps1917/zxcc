@@ -118,6 +118,10 @@ static void gen(Node *node) {
         }
         debug_printf("gen - ND_BLOCK end");
         return;
+    case ND_FUNC:
+        printf("  call %s\n", node->func_name);
+        printf("  push rax\n");
+        return;
     }
 
     gen(node->lhs);

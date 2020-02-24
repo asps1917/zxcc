@@ -217,7 +217,9 @@ static Node *unary() {
     return primary();
 }
 
-// primary = num | ident | "(" expr ")"
+// primary = num
+//         | ident ("(" ")")?
+//         | "(" expr ")"
 static Node *primary() {
     // 次のトークンが"("なら、"(" expr ")"のはず
     if(consume("(")) {
@@ -229,8 +231,18 @@ static Node *primary() {
     // identトークンのチェック
     Token *tok = consume_ident();
     if(tok) {
-        Node *node = alloc_node(ND_LVAR);
+        Node *node;
 
+        // 関数呼び出し
+        if(consume("(")) {
+            expect(")");
+            node = alloc_node(ND_FUNC);
+            node->func_name = strndup(tok->str, tok->len);
+            return node;
+        }
+
+        // ローカル変数
+        node = alloc_node(ND_LVAR);
         LVar *lvar = find_lvar(tok);
         if(lvar) {
             // 割り当て済みのローカル変数

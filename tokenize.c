@@ -159,7 +159,7 @@ Token *tokenize() {
             continue;
         }
 
-        // ローカル変数
+        // 変数、関数
         if(is_alpha(*p)) {
             char *q = p;
             while(is_alnum(*p)) {

@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -64,6 +65,7 @@ typedef enum {
     ND_WHILE,  // while
     ND_FOR,    // for
     ND_BLOCK,  // ブロック
+    ND_FUNC,   // 関数呼び出し
 } NodeKind;
 
 typedef struct Node Node;
@@ -85,6 +87,9 @@ struct Node {
 
     // ブロック用
     Node *next_stmt;
+
+    // 関数呼び出し
+    char *func_name;
 };
 
 typedef struct LVar LVar;

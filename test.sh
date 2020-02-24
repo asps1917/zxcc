@@ -61,4 +61,8 @@ try 10 'limit = 10; a = 0; for(; a<limit; a = a+1) b=1; return a;'
 try 0 'limit = 10;for(a = 0;; a = a+1) return a;'
 try 10 'limit = 10; for(a=0; a<limit;) a = a+1; return a;'
 try 10 'limit = 10; for(;;) return limit; return 0;'
+try 30 '{limit = 10; b=0;} for(a=0; a<limit; a = a+1) {b=b+1; b=b+2; } return b;'
+try 10 'a = 0; while(1) {if(a==10) return a; a =a+1;}'
+try 20 'a = 0; b=0; while(1) {if(a==10) {return b; } a =a+1; b = b+2;}'
+try 21 'a = 0; b=0; while(1) {if(a==10) b = b+1; if(a==20) return b; a =a+1; b=b+1;}'
 echo OK

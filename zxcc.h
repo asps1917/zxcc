@@ -63,6 +63,7 @@ typedef enum {
     ND_IF,     // if
     ND_WHILE,  // while
     ND_FOR,    // for
+    ND_BLOCK,  // ブロック
 } NodeKind;
 
 typedef struct Node Node;
@@ -81,6 +82,9 @@ struct Node {
     Node *els;  // 条件式を満たさない場合の実行処理
     Node *init; // for文の初期化処理
     Node *post; // for文のループ一周終了時処理
+
+    // ブロック用
+    Node *next_stmt;
 };
 
 typedef struct LVar LVar;

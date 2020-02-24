@@ -111,6 +111,13 @@ static void gen(Node *node) {
         printf(".Lend%03d:\n", label_num);
         debug_printf("gen - ND_FOR end");
         return;
+    case ND_BLOCK:
+        debug_printf("gen - ND_BLOCK");
+        for(Node *cur = node->next_stmt; cur; cur = cur->next_stmt) {
+            gen(cur);
+        }
+        debug_printf("gen - ND_BLOCK end");
+        return;
     }
 
     gen(node->lhs);

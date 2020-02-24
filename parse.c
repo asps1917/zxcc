@@ -60,6 +60,7 @@ void program() {
 }
 
 // stmt = "return" expr ";"
+//      | "{" stmt* "}"
 //      | "if" "(" expr ")" stmt ("else" stmt)?
 //      | "while" "(" expr ")" stmt
 //      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
@@ -72,6 +73,19 @@ static Node *stmt() {
         node->lhs = expr();
         expect(";");
         return node;
+    }
+
+    if(consume("{")) {
+        node = alloc_node(ND_BLOCK);
+        Node *cur = node;
+        // stmtを任意個数分parseする
+        while(1) {
+            if(consume("}")) {
+                return node;
+            }
+            cur->next_stmt = stmt();
+            cur = cur->next_stmt;
+        }
     }
 
     if(consume("if")) {

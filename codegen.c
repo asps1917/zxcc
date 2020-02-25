@@ -133,7 +133,21 @@ static void gen(Node *node) {
         for(int i = args_count - 1; i >= 0; i--) {
             printf("  pop %s\n", regs_for_args[i]);
         }
+
+        // x86-64のABIに従ってcall命令実行前にrspを16バイトでアライメントする必要がある
+        label_num = label_seq_num++;
+        printf("  mov rax, rsp\n");
+        printf("  and rax, 15\n");
+        printf("  jnz .L.call.%d\n", label_num);
+        printf("  mov rax, 0\n");
         printf("  call %s\n", node->func_name);
+        printf("  jmp .L.end.%d\n", label_num);
+        printf(".L.call.%d:\n", label_num);
+        printf("  sub rsp, 8\n");
+        printf("  mov rax, 0\n");
+        printf("  call %s\n", node->func_name);
+        printf("  add rsp, 8\n");
+        printf(".L.end.%d:\n", label_num);
         printf("  push rax\n");
         debug_printf("gen - ND_FUNC end");
         return;

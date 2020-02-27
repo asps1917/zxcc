@@ -120,8 +120,8 @@ static void gen(Node *node) {
         }
         debug_printf("gen - ND_BLOCK end");
         return;
-    case ND_FUNC:
-        debug_printf("gen - ND_FUNC");
+    case ND_FUNCCALL:
+        debug_printf("gen - ND_FUNCCALL");
         int args_count = 0;
         for(Node *cur = node->args; cur; cur = cur->next) {
             gen(cur);
@@ -149,7 +149,7 @@ static void gen(Node *node) {
         printf("  add rsp, 8\n");
         printf(".L.end.%d:\n", label_num);
         printf("  push rax\n");
-        debug_printf("gen - ND_FUNC end");
+        debug_printf("gen - ND_FUNCCALL end");
         return;
     }
 

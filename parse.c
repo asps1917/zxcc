@@ -251,7 +251,7 @@ static Node *primary() {
 
         // 関数呼び出し
         if(consume("(")) {
-            node = alloc_node(ND_FUNC);
+            node = alloc_node(ND_FUNCCALL);
             node->func_name = strndup(tok->str, tok->len);
             node->args = func_args();
             return node;

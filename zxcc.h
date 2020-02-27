@@ -41,6 +41,7 @@ Token *consume_ident();
 Token *consume_return();
 void expect(char *op);
 int expect_number();
+char *expect_ident();
 bool at_eof();
 
 //
@@ -111,6 +112,8 @@ extern Node *code[100];
 
 typedef struct Function Function;
 struct Function {
+    Function *next;
+    char *name;
     Node *node;
     LVar *locals;
     int stack_size;

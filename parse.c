@@ -32,7 +32,18 @@ static Node *new_node_num(int val) {
     node->val = val;
     return node;
 }
+// locals変数に初期化したLvar構造体をセットする。
+// Function構造体を生成するごとに呼び出す。
+static void init_locals() {
+    LVar *lvar = calloc(1, sizeof(LVar));
+    lvar->next = NULL;
+    lvar->name = NULL;
+    lvar->len = 0;
+    lvar->offset = 0;
+    locals = lvar;
+}
 
+static Function *function();
 static Node *stmt();
 static Node *expr();
 static Node *assign();
@@ -43,28 +54,42 @@ static Node *mul();
 static Node *unary();
 static Node *primary();
 
-// program = stmt*
+// program = function*
 Function *program() {
-    // localsの先頭にダミーのLVarをセットする
-    LVar *lvar = calloc(1, sizeof(LVar));
-    lvar->next = NULL;
-    lvar->name = NULL;
-    lvar->len = 0;
-    lvar->offset = 0;
-    locals = lvar;
+    Function head = {};
+    Function *cur = &head;
+
+    while(!at_eof()) {
+        cur->next = function();
+        cur = cur->next;
+    }
+
+    return head.next;
+}
+
+// function = ident "(" ")" "{" stmt* "}"
+static Function *function() {
+    init_locals();
+
+    char *func_name = expect_ident();
+    expect("(");
+    expect(")");
+    expect("{");
 
     Node head = {};
     Node *cur = &head;
 
-    while(!at_eof()) {
+    // stmt*
+    while(!consume("}")) {
         cur->next = stmt();
         cur = cur->next;
     }
 
-    Function *prog = calloc(1, sizeof(Function));
-    prog->node = head.next;
-    prog->locals = locals;
-    return prog;
+    Function *func = calloc(1, sizeof(Function));
+    func->node = head.next;
+    func->locals = locals;
+    func->name = func_name;
+    return func;
 }
 
 // stmt = "return" expr ";"

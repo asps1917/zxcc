@@ -205,21 +205,17 @@ static void gen(Node *node) {
     printf("  push rax\n");
 }
 
-void codegen(Function *prog) {
-    label_seq_num = 0;
-
-    // アセンブリの前半部分を出力
-    printf(".intel_syntax noprefix\n");
-    printf(".global main\n");
-    printf("main:\n");
-
-    // プロローグ
+// 関数をアセンブリとして出力する
+static void funcgen(Function *func) {
+    // 関数ラベル、プロローグ出力
+    printf(".global %s\n", func->name);
+    printf("%s:\n", func->name);
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
-    printf("  sub rsp, %d\n", prog->stack_size);
+    printf("  sub rsp, %d\n", func->stack_size);
 
     // 先頭の式から順にコード生成
-    for(Node *node = prog->node; node; node = node->next) {
+    for(Node *node = func->node; node; node = node->next) {
         gen(node);
 
         // 式の評価結果としてスタックに一つの値が残っている
@@ -232,6 +228,17 @@ void codegen(Function *prog) {
     printf("  mov rsp, rbp\n");
     printf("  pop rbp\n");
     printf("  ret\n");
+}
+
+void codegen(Function *prog) {
+    label_seq_num = 0;
+
+    printf(".intel_syntax noprefix\n");
+
+    // 関数をアセンブリに出力
+    for(Function *func = prog; func; func = func->next) {
+        funcgen(func);
+    }
 }
 
 int is_debug = 0;

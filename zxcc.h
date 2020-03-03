@@ -73,6 +73,7 @@ typedef struct Node Node;
 // 抽象構文木のノードの型
 struct Node {
     NodeKind kind; // ノードの型
+    Node *next;    // 次のノード
     Node *lhs;     // 左辺
     Node *rhs;     // 右辺
     int val;       // kindがND_NUMの場合のみ使う
@@ -85,7 +86,8 @@ struct Node {
     Node *init; // for文の初期化処理
     Node *post; // for文のループ一周終了時処理
 
-    Node *next;
+    // ブロック
+    Node *block;
 
     // 関数呼び出し
     char *func_name;

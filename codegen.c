@@ -115,7 +115,7 @@ static void gen(Node *node) {
         return;
     case ND_BLOCK:
         debug_printf("gen - ND_BLOCK");
-        for(Node *cur = node->next; cur; cur = cur->next) {
+        for(Node *cur = node->block; cur; cur = cur->next) {
             gen(cur);
         }
         debug_printf("gen - ND_BLOCK end");

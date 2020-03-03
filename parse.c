@@ -76,16 +76,18 @@ static Node *stmt() {
     }
 
     if(consume("{")) {
-        node = alloc_node(ND_BLOCK);
-        Node *cur = node;
+        Node head = {};
+        Node *cur = &head;
+
         // stmtを任意個数分parseする
-        while(1) {
-            if(consume("}")) {
-                return node;
-            }
+        while(!consume("}")) {
             cur->next = stmt();
             cur = cur->next;
         }
+
+        Node *node = alloc_node(ND_BLOCK);
+        node->block = head.next;
+        return node;
     }
 
     if(consume("if")) {

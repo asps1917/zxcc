@@ -153,8 +153,7 @@ static Node *expr() { return assign(); }
 // assign = equality ("=" assign)?
 static Node *assign() {
     Node *node = equality();
-    if(consume("="))
-        node = new_node(ND_ASSIGN, node, assign());
+    if(consume("=")) node = new_node(ND_ASSIGN, node, assign());
     return node;
 }
 
@@ -220,10 +219,8 @@ static Node *mul() {
 
 // unary = ("+" | "-")? primary
 static Node *unary() {
-    if(consume("+"))
-        return primary();
-    if(consume("-"))
-        return new_node(ND_SUB, new_node_num(0), primary());
+    if(consume("+")) return primary();
+    if(consume("-")) return new_node(ND_SUB, new_node_num(0), primary());
     return primary();
 }
 

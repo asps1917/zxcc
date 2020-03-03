@@ -22,7 +22,7 @@ void error_at(char *loc, char *fmt, ...) {
 
     int pos = loc - user_input;
     fprintf(stderr, "%s\n", user_input);
-    fprintf(stderr, "%*s", pos, ""); // pos個の空白を出力
+    fprintf(stderr, "%*s", pos, "");  // pos個の空白を出力
     fprintf(stderr, "^ ");
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
@@ -73,8 +73,7 @@ void expect(char *op) {
 // 次のトークンが数値の場合、トークンを1つ読み進めてその数値を返す。
 // それ以外の場合にはエラーを報告する。
 int expect_number() {
-    if(token->kind != TK_NUM)
-        error_at(token->str, "数ではありません");
+    if(token->kind != TK_NUM) error_at(token->str, "数ではありません");
     int val = token->val;
     token = token->next;
     return val;

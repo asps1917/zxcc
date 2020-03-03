@@ -16,7 +16,6 @@ int main(int argc, char **argv) {
     //   locals->offsetが必要なローカル変数用領域のサイズと等しい。
     prog->stack_size = prog->locals->offset;
 
-    label_seq_num = 0;
     codegen(prog);
 
     return 0;

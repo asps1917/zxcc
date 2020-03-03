@@ -122,5 +122,4 @@ Function *program();
 // codegen.c
 //
 
-extern int label_seq_num;
 void codegen(Function *prog);

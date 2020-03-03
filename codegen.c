@@ -206,6 +206,8 @@ static void gen(Node *node) {
 }
 
 void codegen(Function *prog) {
+    label_seq_num = 0;
+
     // アセンブリの前半部分を出力
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");

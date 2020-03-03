@@ -44,7 +44,7 @@ static Node *unary();
 static Node *primary();
 
 // program = stmt*
-void program() {
+Function *program() {
     // localsの先頭にダミーのLVarをセットする
     LVar *lvar = calloc(1, sizeof(LVar));
     lvar->next = NULL;
@@ -53,10 +53,18 @@ void program() {
     lvar->offset = 0;
     locals = lvar;
 
-    int i = 0;
-    while(!at_eof())
-        code[i++] = stmt();
-    code[i] = NULL;
+    Node head = {};
+    Node *cur = &head;
+
+    while(!at_eof()) {
+        cur->next = stmt();
+        cur = cur->next;
+    }
+
+    Function *prog = calloc(1, sizeof(Function));
+    prog->node = head.next;
+    prog->locals = locals;
+    return prog;
 }
 
 // stmt = "return" expr ";"

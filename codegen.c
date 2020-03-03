@@ -206,22 +206,20 @@ static void gen(Node *node) {
     printf("  push rax\n");
 }
 
-void codegen() {
+void codegen(Function *prog) {
     // アセンブリの前半部分を出力
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");
     printf("main:\n");
 
     // プロローグ
-    // localsにパース処理中に最後に割り当てたローカル変数のポインタが代入されているため、
-    // locals->offsetが必要なローカル変数用領域のサイズと等しい。
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
-    printf("  sub rsp, %d\n", locals->offset);
+    printf("  sub rsp, %d\n", prog->stack_size);
 
     // 先頭の式から順にコード生成
-    for(int i = 0; code[i]; i++) {
-        gen(code[i]);
+    for(Node *node = prog->node; node; node = node->next) {
+        gen(node);
 
         // 式の評価結果としてスタックに一つの値が残っている
         // はずなので、スタックが溢れないようにポップしておく

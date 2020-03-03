@@ -7,14 +7,17 @@ int main(int argc, char **argv) {
     }
 
     // トークナイズしてパースする
-    // 結果はcodeに保存される
     user_input = argv[1];
     token = tokenize();
+    Function *prog = program();
 
-    program();
+    // ローカル変数分のスタック領域を確保
+    //   パース処理中に最後に割り当てたローカル変数のポインタがlocalsに代入されているため、
+    //   locals->offsetが必要なローカル変数用領域のサイズと等しい。
+    prog->stack_size = prog->locals->offset;
 
     label_seq_num = 0;
-    codegen();
+    codegen(prog);
 
     return 0;
 }

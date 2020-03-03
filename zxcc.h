@@ -109,11 +109,18 @@ extern LVar *locals;
 
 extern Node *code[100];
 
-void program();
+typedef struct Function Function;
+struct Function {
+    Node *node;
+    LVar *locals;
+    int stack_size;
+};
+
+Function *program();
 
 //
 // codegen.c
 //
 
 extern int label_seq_num;
-void codegen();
+void codegen(Function *prog);

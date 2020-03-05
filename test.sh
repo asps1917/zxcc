@@ -92,4 +92,10 @@ try 21 'main() { return add6(1,2,3,4,5,6); }'
 
 try 10 'main() { a = 1; b =2; b = a+b; return b + ret7(); } ret7() { a = 3; b = 4; a = a+b; return a;}'
 
+try 7 'main() { return add2(3,4); } add2(x,y) { return x+y; }'
+try 1 'main() { return sub2(4,3); } sub2(x,y) { return x-y; }'
+try 55 'main() { return fib(9); } fib(x) { if (x<=1) return 1; return fib(x-1) + fib(x-2); }'
+try 17 'main() { return foo(6,4); } foo(x,y) { a = 1; b =2; a = a + b; return x + y - a + add2(3, 7); } add2(x,y) { return x+y; }'
+try 21 'main() {return add_6(1,2,3,4,5,6);} add_6(a,b,c,d,e,f) {return a+b+c+d+e+f; }'
+
 echo OK

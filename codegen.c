@@ -214,13 +214,15 @@ static void funcgen(Function *func) {
     printf("  mov rbp, rsp\n");
     printf("  sub rsp, %d\n", func->stack_size);
 
+    // レジスタ上の引数をスタック領域にコピー
+    int i = 0;
+    for(VarList *arg = func->args; arg; arg = arg->next) {
+        printf("  mov [rbp-%d], %s\n", arg->var->offset, regs_for_args[i++]);
+    }
+
     // 先頭の式から順にコード生成
     for(Node *node = func->node; node; node = node->next) {
         gen(node);
-
-        // 式の評価結果としてスタックに一つの値が残っている
-        // はずなので、スタックが溢れないようにポップしておく
-        printf("  pop rax\n");
     }
 
     // エピローグ

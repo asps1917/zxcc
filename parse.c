@@ -4,13 +4,16 @@
 Node *code[100];
 
 // パース処理中に現れたローカル変数を追加するための連結リスト
-LVar *locals;
+VarList *locals;
 
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
 static LVar *find_lvar(Token *tok) {
-    for(LVar *var = locals; var; var = var->next)
-        if(var->len == tok->len && !memcmp(tok->str, var->name, var->len))
+    for(VarList *vlist = locals; vlist; vlist = vlist->next) {
+        LVar *var = vlist->var;
+        if(var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
             return var;
+        }
+    }
     return NULL;
 }
 
@@ -32,15 +35,10 @@ static Node *new_node_num(int val) {
     node->val = val;
     return node;
 }
-// locals変数に初期化したLvar構造体をセットする。
-// Function構造体を生成するごとに呼び出す。
-static void init_locals() {
+// 初期化済みのLvar構造体を作成する。
+static LVar *init_lvar() {
     LVar *lvar = calloc(1, sizeof(LVar));
-    lvar->next = NULL;
-    lvar->name = NULL;
-    lvar->len = 0;
-    lvar->offset = 0;
-    locals = lvar;
+    return lvar;
 }
 
 static Function *function();
@@ -67,13 +65,48 @@ Function *program() {
     return head.next;
 }
 
-// function = ident "(" ")" "{" stmt* "}"
-static Function *function() {
-    init_locals();
+// params   = ident ("," ident)*
+static VarList *params() {
+    VarList *head = calloc(1, sizeof(VarList));
+    head->var = init_lvar();
+    VarList *cur = head;
 
-    char *func_name = expect_ident();
+    while(1) {
+        char *var_name = expect_ident();
+        // identを以下のVarListに追加
+        // * 関数定義内の引数リスト
+        // * locals(ローカル変数リスト)
+        LVar *lvar = calloc(1, sizeof(LVar));
+        VarList *vl = calloc(1, sizeof(VarList));
+        vl->next = locals;
+        vl->var = lvar;
+        lvar->name = var_name;
+        lvar->len = strlen(var_name);
+        lvar->offset = locals->var->offset + 8;
+        locals = vl;
+
+        cur->next = calloc(1, sizeof(VarList));
+        cur->next->var = lvar;
+        cur = cur->next;
+
+        if(!consume(",")) {
+            return head->next;
+        }
+    }
+}
+
+// function = ident "(" params? ")" "{" stmt* "}"
+static Function *function() {
+    locals = calloc(1, sizeof(VarList));
+    locals->var = init_lvar();
+
+    Function *func = calloc(1, sizeof(Function));
+    func->name = expect_ident();
     expect("(");
-    expect(")");
+    if(!consume(")")) {
+        func->args = params();
+        expect(")");
+    }
     expect("{");
 
     Node head = {};
@@ -85,10 +118,8 @@ static Function *function() {
         cur = cur->next;
     }
 
-    Function *func = calloc(1, sizeof(Function));
     func->node = head.next;
     func->locals = locals;
-    func->name = func_name;
     return func;
 }
 
@@ -300,12 +331,14 @@ static Node *primary() {
             // 初めて出現したローカル変数
             // スタック上のローカル変数用領域に割り当てる
             lvar = calloc(1, sizeof(LVar));
-            lvar->next = locals;
+            VarList *vl = calloc(1, sizeof(VarList));
+            vl->var = lvar;
+            vl->next = locals;
             lvar->name = tok->str;
             lvar->len = tok->len;
-            lvar->offset = locals->offset + 8;
+            lvar->offset = locals->var->offset + 8;
             node->offset = lvar->offset;
-            locals = lvar;
+            locals = vl;
         }
         return node;
     }

@@ -13,9 +13,9 @@ int main(int argc, char **argv) {
 
     // ローカル変数分のスタック領域を確保
     //   パース処理中に最後に割り当てたローカル変数のポインタがlocalsに代入されているため、
-    //   locals->offsetが必要なローカル変数用領域のサイズと等しい。
+    //   locals->var->offsetが必要なローカル変数用領域のサイズと等しい。
     for(Function *func = prog; func; func = func->next) {
-        func->stack_size = func->locals->offset;
+        func->stack_size = func->locals->var->offset;
     }
 
     codegen(prog);

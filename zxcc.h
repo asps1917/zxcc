@@ -99,23 +99,28 @@ typedef struct LVar LVar;
 
 // ローカル変数の型
 struct LVar {
-    LVar *next;  // 次の変数かNULL
     char *name;  // 変数の名前
     int len;     // 名前の長さ
     int offset;  // RBPからのオフセット
 };
 
-// ローカル変数
-extern LVar *locals;
+typedef struct VarList VarList;
+struct VarList {
+    VarList *next;
+    LVar *var;
+};
 
+// ローカル変数
 extern Node *code[100];
 
 typedef struct Function Function;
 struct Function {
     Function *next;
     char *name;
+    VarList *args;
+
     Node *node;
-    LVar *locals;
+    VarList *locals;
     int stack_size;
 };
 

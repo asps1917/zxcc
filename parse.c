@@ -1,8 +1,5 @@
 #include "zxcc.h"
 
-// 各stmtを保存する
-Node *code[100];
-
 // パース処理中に現れたローカル変数を追加するための連結リスト
 VarList *locals;
 

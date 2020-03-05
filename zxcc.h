@@ -95,9 +95,8 @@ struct Node {
     Node *args;
 };
 
-typedef struct LVar LVar;
-
 // ローカル変数の型
+typedef struct LVar LVar;
 struct LVar {
     char *name;  // 変数の名前
     int len;     // 名前の長さ
@@ -109,9 +108,6 @@ struct VarList {
     VarList *next;
     LVar *var;
 };
-
-// ローカル変数
-extern Node *code[100];
 
 typedef struct Function Function;
 struct Function {

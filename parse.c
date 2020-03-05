@@ -15,6 +15,19 @@ static LVar *find_lvar(Token *tok) {
     return NULL;
 }
 
+// 引数として与えられた変数名のLVar構造体を生成する。
+// 生成したLVar構造体はlocalsリストに追加される。
+static LVar *new_lvar(char *name) {
+    LVar *lvar = calloc(1, sizeof(LVar));
+    VarList *vl = calloc(1, sizeof(VarList));
+
+    vl->var = lvar;
+    vl->next = locals;
+    lvar->name = name;
+    locals = vl;
+    return lvar;
+}
+
 static Node *alloc_node(NodeKind kind) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = kind;
@@ -74,13 +87,7 @@ static VarList *params() {
         // identを以下のVarListに追加
         // * 関数定義内の引数リスト
         // * locals(ローカル変数リスト)
-        LVar *lvar = calloc(1, sizeof(LVar));
-        VarList *vl = calloc(1, sizeof(VarList));
-        vl->next = locals;
-        vl->var = lvar;
-        lvar->name = var_name;
-        locals = vl;
-
+        LVar *lvar = new_lvar(var_name);
         cur->next = calloc(1, sizeof(VarList));
         cur->next->var = lvar;
         cur = cur->next;
@@ -325,12 +332,7 @@ static Node *primary() {
         } else {
             // 初めて出現したローカル変数
             // スタック上のローカル変数用領域に割り当てる
-            lvar = calloc(1, sizeof(LVar));
-            VarList *vl = calloc(1, sizeof(VarList));
-            vl->var = lvar;
-            vl->next = locals;
-            lvar->name = strndup(tok->str, tok->len);
-            locals = vl;
+            lvar = new_lvar(strndup(tok->str, tok->len));
             node->lvar = lvar;
         }
         return node;

@@ -7,7 +7,8 @@ VarList *locals;
 static LVar *find_lvar(Token *tok) {
     for(VarList *vlist = locals; vlist; vlist = vlist->next) {
         LVar *var = vlist->var;
-        if(var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
+        if(strlen(var->name) == tok->len &&
+           !memcmp(tok->str, var->name, tok->len)) {
             return var;
         }
     }
@@ -78,7 +79,6 @@ static VarList *params() {
         vl->next = locals;
         vl->var = lvar;
         lvar->name = var_name;
-        lvar->len = strlen(var_name);
         locals = vl;
 
         cur->next = calloc(1, sizeof(VarList));
@@ -329,8 +329,7 @@ static Node *primary() {
             VarList *vl = calloc(1, sizeof(VarList));
             vl->var = lvar;
             vl->next = locals;
-            lvar->name = tok->str;
-            lvar->len = tok->len;
+            lvar->name = strndup(tok->str, tok->len);
             locals = vl;
             node->lvar = lvar;
         }

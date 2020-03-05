@@ -73,7 +73,6 @@ typedef enum {
 typedef struct LVar LVar;
 struct LVar {
     char *name;  // 変数の名前
-    int len;     // 名前の長さ
     int offset;  // RBPからのオフセット
 };
 

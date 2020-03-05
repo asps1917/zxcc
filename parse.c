@@ -79,7 +79,6 @@ static VarList *params() {
         vl->var = lvar;
         lvar->name = var_name;
         lvar->len = strlen(var_name);
-        lvar->offset = locals->var->offset + 8;
         locals = vl;
 
         cur->next = calloc(1, sizeof(VarList));
@@ -94,8 +93,7 @@ static VarList *params() {
 
 // function = ident "(" params? ")" "{" stmt* "}"
 static Function *function() {
-    locals = calloc(1, sizeof(VarList));
-    locals->var = init_lvar();
+    locals = NULL;
 
     Function *func = calloc(1, sizeof(Function));
     func->name = expect_ident();
@@ -323,7 +321,7 @@ static Node *primary() {
         if(lvar) {
             // 割り当て済みのローカル変数
             // スタック上のアドレスを取得する
-            node->offset = lvar->offset;
+            node->lvar = lvar;
         } else {
             // 初めて出現したローカル変数
             // スタック上のローカル変数用領域に割り当てる
@@ -333,9 +331,8 @@ static Node *primary() {
             vl->next = locals;
             lvar->name = tok->str;
             lvar->len = tok->len;
-            lvar->offset = locals->var->offset + 8;
-            node->offset = lvar->offset;
             locals = vl;
+            node->lvar = lvar;
         }
         return node;
     }

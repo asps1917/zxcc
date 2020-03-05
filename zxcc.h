@@ -69,6 +69,20 @@ typedef enum {
     ND_FUNCCALL,  // 関数呼び出し
 } NodeKind;
 
+// ローカル変数の型
+typedef struct LVar LVar;
+struct LVar {
+    char *name;  // 変数の名前
+    int len;     // 名前の長さ
+    int offset;  // RBPからのオフセット
+};
+
+typedef struct VarList VarList;
+struct VarList {
+    VarList *next;
+    LVar *var;
+};
+
 typedef struct Node Node;
 
 // 抽象構文木のノードの型
@@ -78,7 +92,6 @@ struct Node {
     Node *lhs;      // 左辺
     Node *rhs;      // 右辺
     int val;        // kindがND_NUMの場合のみ使う
-    int offset;     // kindがND_LVARの場合のみ使う
 
     // if, while, for文用
     Node *cond;  // 条件式
@@ -93,20 +106,9 @@ struct Node {
     // 関数呼び出し
     char *func_name;
     Node *args;
-};
 
-// ローカル変数の型
-typedef struct LVar LVar;
-struct LVar {
-    char *name;  // 変数の名前
-    int len;     // 名前の長さ
-    int offset;  // RBPからのオフセット
-};
-
-typedef struct VarList VarList;
-struct VarList {
-    VarList *next;
-    LVar *var;
+    // ND_LVAR用
+    LVar *lvar;
 };
 
 typedef struct Function Function;

@@ -11,11 +11,16 @@ int main(int argc, char **argv) {
     token = tokenize();
     Function *prog = program();
 
-    // ローカル変数分のスタック領域を確保
-    //   パース処理中に最後に割り当てたローカル変数のポインタがlocalsに代入されているため、
-    //   locals->var->offsetが必要なローカル変数用領域のサイズと等しい。
+    // ローカル変数のオフセット設定 & スタックサイズ算出
+    // localsリスト上の各ローカル変数に8byteずつ割り当てる
     for(Function *func = prog; func; func = func->next) {
-        func->stack_size = func->locals->var->offset;
+        int offset = 0;
+        for(VarList *vl = func->locals; vl; vl = vl->next) {
+            LVar *lvar = vl->var;
+            offset += 8;
+            lvar->offset = offset;
+        }
+        func->stack_size = offset;
     }
 
     codegen(prog);

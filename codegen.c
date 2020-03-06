@@ -7,16 +7,24 @@ static char *func_name;
 static char *regs_for_args[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 static void debug_printf(char *fmt, ...);
+static void gen(Node *node);
 
 // nodeを左辺値として評価し、そのアドレスをスタックにpushするコードを生成する。
-// nodeが変数ではない場合エラー終了させる。
+// nodeが評価不可能な場合エラー終了させる。
 static void gen_lval(Node *node) {
     debug_printf("gen_lval");
-    if(node->kind != ND_LVAR) error("代入の左辺値が変数ではありません");
-
-    printf("  mov rax, rbp\n");
-    printf("  sub rax, %d\n", node->lvar->offset);
-    printf("  push rax\n");
+    switch(node->kind) {
+        case ND_LVAR:
+            printf("  mov rax, rbp\n");
+            printf("  sub rax, %d\n", node->lvar->offset);
+            printf("  push rax\n");
+            break;
+        case ND_DEREF:
+            gen(node->lhs);
+            break;
+        default:
+            error("引数が左辺値として評価不可能なノードです");
+    }
     debug_printf("gen_lval end");
 }
 
@@ -45,6 +53,19 @@ static void gen(Node *node) {
             printf("  mov [rax], rdi\n");
             printf("  push rdi\n");
             debug_printf("gen - ND_ASSIGN end");
+            return;
+        case ND_ADDR:
+            debug_printf("gen - ND_ADDR");
+            gen_lval(node->lhs);
+            debug_printf("gen - ND_ADDR end");
+            return;
+        case ND_DEREF:
+            debug_printf("gen - ND_DEREF");
+            gen(node->lhs);
+            printf("  pop rax\n");
+            printf("  mov rax, [rax]\n");
+            printf("  push rax\n");
+            debug_printf("gen - ND_DEREF end");
             return;
         case ND_RETURN:
             debug_printf("gen - ND_RETURN");

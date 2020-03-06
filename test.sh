@@ -98,4 +98,12 @@ try 55 'main() { return fib(9); } fib(x) { if (x<=1) return 1; return fib(x-1) +
 try 17 'main() { return foo(6,4); } foo(x,y) { a = 1; b =2; a = a + b; return x + y - a + add2(3, 7); } add2(x,y) { return x+y; }'
 try 21 'main() {return add_6(1,2,3,4,5,6);} add_6(a,b,c,d,e,f) {return a+b+c+d+e+f; }'
 
+try 3 'main() {x = 3; y = &x; return *y;}'
+try 3 'main() {x = 3; y = 5; z = &y - 8; return *z;}'
+try 5 'main() {x = 3; y = 5; z = &x + 8; return *z;}'
+try 3 'main() { x=3; y=&x; z=&y; return **z; }'
+try 5 'main() { x=3; y=&x; *y=5; return x; }'
+try 7 'main() { x=3; y=5; *(&x+8)=7; return y; }'
+try 7 'main() { x=3; y=5; *(&y-8)=7; return x; }'
+
 echo OK

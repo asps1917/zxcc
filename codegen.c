@@ -2,6 +2,7 @@
 
 // labelの通し番号
 int label_seq_num;
+static char *func_name;
 
 static char *regs_for_args[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
@@ -49,9 +50,7 @@ static void gen(Node *node) {
             debug_printf("gen - ND_RETURN");
             gen(node->lhs);
             printf("  pop rax\n");
-            printf("  mov rsp, rbp\n");
-            printf("  pop rbp\n");
-            printf("  ret\n");
+            printf("  jmp .L.return.%s\n", func_name);
             debug_printf("gen - ND_RETURN end");
             return;
         case ND_IF:
@@ -207,6 +206,7 @@ static void gen(Node *node) {
 
 // 関数をアセンブリとして出力する
 static void funcgen(Function *func) {
+    func_name = func->name;
     // 関数ラベル、プロローグ出力
     printf(".global %s\n", func->name);
     printf("%s:\n", func->name);
@@ -227,6 +227,7 @@ static void funcgen(Function *func) {
 
     // エピローグ
     // 最後の式の結果がRAXに残っているのでそれが返り値になる
+    printf(".L.return.%s:\n", func_name);
     printf("  mov rsp, rbp\n");
     printf("  pop rbp\n");
     printf("  ret\n");

@@ -46,11 +46,6 @@ static Node *new_node_num(int val) {
     node->val = val;
     return node;
 }
-// 初期化済みのLvar構造体を作成する。
-static LVar *init_lvar() {
-    LVar *lvar = calloc(1, sizeof(LVar));
-    return lvar;
-}
 
 static Function *function();
 static Node *stmt();
@@ -79,7 +74,7 @@ Function *program() {
 // params   = ident ("," ident)*
 static VarList *params() {
     VarList *head = calloc(1, sizeof(VarList));
-    head->var = init_lvar();
+    head->var = calloc(1, sizeof(LVar));
     VarList *cur = head;
 
     while(1) {

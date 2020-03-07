@@ -126,6 +126,7 @@ static Function *function() {
 //      | "while" "(" expr ")" stmt
 //      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //      | expr ";"
+//      | "int" ident ";"
 static Node *stmt() {
     Node *node;
 
@@ -192,6 +193,25 @@ static Node *stmt() {
             expect(")");
         }
         node->then = stmt();
+        return node;
+    }
+
+    // 変数定義
+    if(consume("int")) {
+        Token *tok = consume_ident();
+        if(!tok) {
+            error("変数定義の構文エラー");
+        }
+        expect(";");
+
+        // localsに定義した変数を追加
+        node = alloc_node(ND_LVAR);
+        LVar *lvar = find_lvar(tok);
+        if(lvar) {
+            error("変数%sは重複して定義されています", lvar->name);
+        }
+        lvar = new_lvar(strndup(tok->str, tok->len));
+        node->lvar = lvar;
         return node;
     }
 
@@ -326,16 +346,14 @@ static Node *primary() {
         node = alloc_node(ND_LVAR);
         LVar *lvar = find_lvar(tok);
         if(lvar) {
-            // 割り当て済みのローカル変数
-            // スタック上のアドレスを取得する
+            // 定義済みのローカル変数への参照
             node->lvar = lvar;
+            return node;
         } else {
-            // 初めて出現したローカル変数
-            // スタック上のローカル変数用領域に割り当てる
-            lvar = new_lvar(strndup(tok->str, tok->len));
-            node->lvar = lvar;
+            // 未定義のローカル変数
+            char *s = strndup(tok->str, tok->len);
+            error("未定義のローカル変数%sを参照しています", s);
         }
-        return node;
     }
 
     // そうでなければ数値のはず

@@ -17,13 +17,14 @@ static LVar *find_lvar(Token *tok) {
 
 // 引数として与えられた変数名のLVar構造体を生成する。
 // 生成したLVar構造体はlocalsリストに追加される。
-static LVar *new_lvar(char *name) {
+static LVar *new_lvar(char *name, Type *type) {
     LVar *lvar = calloc(1, sizeof(LVar));
     VarList *vl = calloc(1, sizeof(VarList));
 
     vl->var = lvar;
     vl->next = locals;
     lvar->name = name;
+    lvar->type = type;
     locals = vl;
     return lvar;
 }
@@ -71,19 +72,34 @@ Function *program() {
     return head.next;
 }
 
-// params   = "int" ident ("," "int" ident)*
+// basetype = "int" "*"*
+// パースした型を表すType構造体へのポインタを返す
+static Type *basetype() {
+    expect("int");
+    Type *cur = calloc(1, sizeof(Type));
+    cur->ty = INT;
+    while(consume("*")) {
+        Type *type = calloc(1, sizeof(Type));
+        type->ty = PTR;
+        type->ptr_to = cur;
+        cur = type;
+    }
+    return cur;
+}
+
+// params   = basetype ident ("," basetype ident)*
 static VarList *params() {
     VarList *head = calloc(1, sizeof(VarList));
     head->var = calloc(1, sizeof(LVar));
     VarList *cur = head;
 
     while(1) {
-        expect("int");
+        Type *type = basetype();
         char *var_name = expect_ident();
         // identを以下のVarListに追加
         // * 関数定義内の引数リスト
         // * locals(ローカル変数リスト)
-        LVar *lvar = new_lvar(var_name);
+        LVar *lvar = new_lvar(var_name, type);
         cur->next = calloc(1, sizeof(VarList));
         cur->next->var = lvar;
         cur = cur->next;
@@ -94,11 +110,11 @@ static VarList *params() {
     }
 }
 
-// function = "int" ident "(" params? ")" "{" stmt* "}"
+// function = basetype ident "(" params? ")" "{" stmt* "}"
 static Function *function() {
     locals = NULL;
 
-    expect("int");
+    basetype();
     Function *func = calloc(1, sizeof(Function));
     func->name = expect_ident();
     expect("(");
@@ -128,7 +144,7 @@ static Function *function() {
 //      | "while" "(" expr ")" stmt
 //      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //      | expr ";"
-//      | "int" ident ";"
+//      | basetype ident ";"
 static Node *stmt() {
     Node *node;
 
@@ -199,7 +215,8 @@ static Node *stmt() {
     }
 
     // 変数定義
-    if(consume("int")) {
+    if(match("int")) {
+        Type *type = basetype();
         Token *tok = consume_ident();
         if(!tok) {
             error("変数定義の構文エラー");
@@ -212,7 +229,7 @@ static Node *stmt() {
         if(lvar) {
             error("変数%sは重複して定義されています", lvar->name);
         }
-        lvar = new_lvar(strndup(tok->str, tok->len));
+        lvar = new_lvar(strndup(tok->str, tok->len), type);
         node->lvar = lvar;
         return node;
     }

@@ -37,6 +37,7 @@ void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 Token *tokenize();
 bool consume(char *op);
+bool match(char *op);
 Token *consume_ident();
 Token *consume_return();
 void expect(char *op);
@@ -71,11 +72,24 @@ typedef enum {
     ND_DEREF,     // 単項 *
 } NodeKind;
 
+typedef enum {
+    INT,  // 整数
+    PTR,  // ポインタ
+} TypeKind;
+
+// 型を表す型
+typedef struct Type Type;
+struct Type {
+    TypeKind ty;
+    struct Type *ptr_to;
+};
+
 // ローカル変数の型
 typedef struct LVar LVar;
 struct LVar {
     char *name;  // 変数の名前
     int offset;  // RBPからのオフセット
+    Type *type;  // 変数の型
 };
 
 typedef struct VarList VarList;

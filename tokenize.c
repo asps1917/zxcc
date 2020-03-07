@@ -39,6 +39,15 @@ bool consume(char *op) {
     return true;
 }
 
+// 次のトークンが期待している記号のときには真を返す。(トークンは読み進めない)
+// それ以外の場合には偽を返す。
+bool match(char *op) {
+    if(token->kind != TK_RESERVED || strlen(op) != token->len ||
+       memcmp(token->str, op, token->len))
+        return false;
+    return true;
+}
+
 // 次のトークンが識別子の場合、トークンを1つ読み進めてそのトークンを返す。
 // それ以外の場合にはNULLを返す。
 Token *consume_ident() {

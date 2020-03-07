@@ -98,12 +98,13 @@ try 55 'int main() { return fib(9); } int fib(int x) { if (x<=1) return 1; retur
 try 17 'int main() { return foo(6,4); } int foo(int x,int y) { int a; int b; a = 1; b =2; a = a + b; return x + y - a + add2(3, 7); } int add2(int x,int y) { return x+y; }'
 try 21 'int main() {return add_6(1,2,3,4,5,6);} int add_6(int a,int b,int c,int d,int e,int f) {return a+b+c+d+e+f; }'
 
-try 3 'int main() { int x; int y; x = 3; y = &x; return *y;}'
-try 3 'int main() { int x; int y; int z; x = 3; y = 5; z = &y - 8; return *z;}'
-try 5 'int main() { int x; int y; int z; x = 3; y = 5; z = &x + 8; return *z;}'
-try 3 'int main() { int x; int y; int z; x=3; y=&x; z=&y; return **z; }'
-try 5 'int main() { int x; int y; x=3; y=&x; *y=5; return x; }'
+try 3 'int main() { int x; int *y; x = 3; y = &x; return *y;}'
+try 3 'int main() { int x; int y; int *z; x = 3; y = 5; z = &y - 8; return *z;}'
+try 5 'int main() { int x; int y; int *z; x = 3; y = 5; z = &x + 8; return *z;}'
+try 3 'int main() { int x; int *y; int **z; x=3; y=&x; z=&y; return **z; }'
+try 5 'int main() { int x; int *y; x=3; y=&x; *y=5; return x; }'
 try 7 'int main() { int x; int y; x=3; y=5; *(&x+8)=7; return y; }'
 try 7 'int main() { int x; int y; x=3; y=5; *(&y-8)=7; return x; }'
+try 8 'int main() { int x; x=3; int y; y=5; return foo(&x, y); } int foo(int *x, int y) { return *x + y; }'
 
 echo OK

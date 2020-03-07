@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct Type Type;
+
 //
 // tokenize.c
 //
@@ -51,8 +53,11 @@ bool at_eof();
 
 // 抽象構文木のノードの種類
 typedef enum {
-    ND_ADD,       // +
-    ND_SUB,       // -
+    ND_ADD,       // num + num
+    ND_PTR_ADD,   // ptr + num or num + ptr
+    ND_SUB,       // num - num
+    ND_PTR_SUB,   // ptr - num or num - ptr
+    ND_PTR_DIFF,  // ptr - ptr
     ND_MUL,       // *
     ND_DIV,       // /
     ND_EQ,        // ==
@@ -71,18 +76,6 @@ typedef enum {
     ND_ADDR,      // 単項 &
     ND_DEREF,     // 単項 *
 } NodeKind;
-
-typedef enum {
-    INT,  // 整数
-    PTR,  // ポインタ
-} TypeKind;
-
-// 型を表す型
-typedef struct Type Type;
-struct Type {
-    TypeKind ty;
-    struct Type *ptr_to;
-};
 
 // ローカル変数の型
 typedef struct LVar LVar;
@@ -104,6 +97,7 @@ typedef struct Node Node;
 struct Node {
     NodeKind kind;  // ノードの型
     Node *next;     // 次のノード
+    Type *type;     // 型
     Node *lhs;      // 左辺
     Node *rhs;      // 右辺
     int val;        // kindがND_NUMの場合のみ使う
@@ -138,6 +132,24 @@ struct Function {
 };
 
 Function *program();
+
+//
+// type.c
+//
+
+typedef enum {
+    INT,  // 整数
+    PTR,  // ポインタ
+} TypeKind;
+
+// 型を表す型
+struct Type {
+    TypeKind ty;
+    struct Type *ptr_to;
+};
+
+bool is_integer(Type *type);
+void add_type(Node *node);
 
 //
 // codegen.c

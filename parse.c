@@ -50,6 +50,7 @@ static Node *new_node_num(int val) {
 
 static Function *function();
 static Node *stmt();
+static Node *stmt2();
 static Node *expr();
 static Node *assign();
 static Node *equality();
@@ -138,6 +139,13 @@ static Function *function() {
     return func;
 }
 
+static Node *stmt() {
+    Node *node = stmt2();
+    // stmt2によって生成されたノードツリーの各ノードに型を設定する
+    add_type(node);
+    return node;
+}
+
 // stmt = "return" expr ";"
 //      | "{" stmt* "}"
 //      | "if" "(" expr ")" stmt ("else" stmt)?
@@ -145,7 +153,7 @@ static Function *function() {
 //      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //      | expr ";"
 //      | basetype ident ";"
-static Node *stmt() {
+static Node *stmt2() {
     Node *node;
 
     if(consume_return()) {
@@ -281,15 +289,49 @@ static Node *relational() {
     }
 }
 
+// lhs,rhsを元に整数型orポインタ型の加算ノードを生成する。
+static Node *new_add(Node *lhs, Node *rhs) {
+    add_type(lhs);
+    add_type(rhs);
+
+    if(is_integer(lhs->type) && is_integer(rhs->type)) {
+        return new_node(ND_ADD, lhs, rhs);
+    }
+    if(lhs->type->ptr_to && is_integer(rhs->type)) {
+        return new_node(ND_PTR_ADD, lhs, rhs);
+    }
+    if(is_integer(lhs->type) && rhs->type->ptr_to) {
+        return new_node(ND_PTR_ADD, rhs, lhs);
+    }
+    error("無効な演算です");
+}
+
+// lhs,rhsを元に整数型orポインタ型の減算ノードを生成する。
+static Node *new_sub(Node *lhs, Node *rhs) {
+    add_type(lhs);
+    add_type(rhs);
+
+    if(is_integer(lhs->type) && is_integer(rhs->type)) {
+        return new_node(ND_SUB, lhs, rhs);
+    }
+    if(lhs->type->ptr_to && is_integer(rhs->type)) {
+        return new_node(ND_PTR_SUB, lhs, rhs);
+    }
+    if(lhs->type->ptr_to && rhs->type->ptr_to) {
+        return new_node(ND_PTR_DIFF, lhs, rhs);
+    }
+    error("無効な演算です");
+}
+
 // add = mul ("+" mul | "-" mul)*
 static Node *add() {
     Node *node = mul();
 
     for(;;) {
         if(consume("+"))
-            node = new_node(ND_ADD, node, mul());
+            node = new_add(node, mul());
         else if(consume("-"))
-            node = new_node(ND_SUB, node, mul());
+            node = new_sub(node, mul());
         else
             return node;
     }

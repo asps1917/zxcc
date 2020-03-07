@@ -92,11 +92,11 @@ try 21 'int main() { return add6(1,2,3,4,5,6); }'
 
 try 10 'int main() { int a; int b; a = 1; b =2; b = a+b; return b + ret7(); } int ret7() { int a; int b; a = 3; b = 4; a = a+b; return a;}'
 
-try 7 'int main() { return add2(3,4); } int add2(x,y) { return x+y; }'
-try 1 'int main() { return sub2(4,3); } int sub2(x,y) { return x-y; }'
-try 55 'int main() { return fib(9); } int fib(x) { if (x<=1) return 1; return fib(x-1) + fib(x-2); }'
-try 17 'int main() { return foo(6,4); } int foo(x,y) { int a; int b; a = 1; b =2; a = a + b; return x + y - a + add2(3, 7); } int add2(x,y) { return x+y; }'
-try 21 'int main() {return add_6(1,2,3,4,5,6);} int add_6(a,b,c,d,e,f) {return a+b+c+d+e+f; }'
+try 7 'int main() { return add2(3,4); } int add2(int x,int y) { return x+y; }'
+try 1 'int main() { return sub2(4,3); } int sub2(int x,int y) { return x-y; }'
+try 55 'int main() { return fib(9); } int fib(int x) { if (x<=1) return 1; return fib(x-1) + fib(x-2); }'
+try 17 'int main() { return foo(6,4); } int foo(int x,int y) { int a; int b; a = 1; b =2; a = a + b; return x + y - a + add2(3, 7); } int add2(int x,int y) { return x+y; }'
+try 21 'int main() {return add_6(1,2,3,4,5,6);} int add_6(int a,int b,int c,int d,int e,int f) {return a+b+c+d+e+f; }'
 
 try 3 'int main() { int x; int y; x = 3; y = &x; return *y;}'
 try 3 'int main() { int x; int y; int z; x = 3; y = 5; z = &y - 8; return *z;}'

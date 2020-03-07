@@ -71,13 +71,14 @@ Function *program() {
     return head.next;
 }
 
-// params   = ident ("," ident)*
+// params   = "int" ident ("," "int" ident)*
 static VarList *params() {
     VarList *head = calloc(1, sizeof(VarList));
     head->var = calloc(1, sizeof(LVar));
     VarList *cur = head;
 
     while(1) {
+        expect("int");
         char *var_name = expect_ident();
         // identを以下のVarListに追加
         // * 関数定義内の引数リスト

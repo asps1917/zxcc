@@ -93,10 +93,11 @@ static VarList *params() {
     }
 }
 
-// function = ident "(" params? ")" "{" stmt* "}"
+// function = "int" ident "(" params? ")" "{" stmt* "}"
 static Function *function() {
     locals = NULL;
 
+    expect("int");
     Function *func = calloc(1, sizeof(Function));
     func->name = expect_ident();
     expect("(");

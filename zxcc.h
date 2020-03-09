@@ -78,8 +78,8 @@ typedef enum {
 } NodeKind;
 
 // ローカル変数の型
-typedef struct LVar LVar;
-struct LVar {
+typedef struct Var Var;
+struct Var {
     char *name;  // 変数の名前
     int offset;  // RBPからのオフセット
     Type *type;  // 変数の型
@@ -88,7 +88,7 @@ struct LVar {
 typedef struct VarList VarList;
 struct VarList {
     VarList *next;
-    LVar *var;
+    Var *var;
 };
 
 typedef struct Node Node;
@@ -117,7 +117,7 @@ struct Node {
     Node *args;
 
     // ND_LVAR用
-    LVar *lvar;
+    Var *lvar;
 };
 
 typedef struct Function Function;

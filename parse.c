@@ -4,9 +4,9 @@
 VarList *locals;
 
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
-static LVar *find_lvar(Token *tok) {
+static Var *find_lvar(Token *tok) {
     for(VarList *vlist = locals; vlist; vlist = vlist->next) {
-        LVar *var = vlist->var;
+        Var *var = vlist->var;
         if(strlen(var->name) == tok->len &&
            !memcmp(tok->str, var->name, tok->len)) {
             return var;
@@ -15,10 +15,10 @@ static LVar *find_lvar(Token *tok) {
     return NULL;
 }
 
-// 引数として与えられた変数名のLVar構造体を生成する。
-// 生成したLVar構造体はlocalsリストに追加される。
-static LVar *new_lvar(char *name, Type *type) {
-    LVar *lvar = calloc(1, sizeof(LVar));
+// 引数として与えられた変数名のVar構造体を生成する。
+// 生成したVar構造体はlocalsリストに追加される。
+static Var *new_lvar(char *name, Type *type) {
+    Var *lvar = calloc(1, sizeof(Var));
     VarList *vl = calloc(1, sizeof(VarList));
 
     vl->var = lvar;
@@ -89,7 +89,7 @@ static Type *basetype() {
 // params   = basetype ident ("," basetype ident)*
 static VarList *params() {
     VarList *head = calloc(1, sizeof(VarList));
-    head->var = calloc(1, sizeof(LVar));
+    head->var = calloc(1, sizeof(Var));
     VarList *cur = head;
 
     while(1) {
@@ -98,7 +98,7 @@ static VarList *params() {
         // identを以下のVarListに追加
         // * 関数定義内の引数リスト
         // * locals(ローカル変数リスト)
-        LVar *lvar = new_lvar(var_name, type);
+        Var *lvar = new_lvar(var_name, type);
         cur->next = calloc(1, sizeof(VarList));
         cur->next->var = lvar;
         cur = cur->next;
@@ -158,7 +158,7 @@ static Node *declaration() {
 
     // localsに定義した変数を追加
     Node *node = alloc_node(ND_LVAR);
-    LVar *lvar = find_lvar(tok);
+    Var *lvar = find_lvar(tok);
     if(lvar) {
         error("変数%sは重複して定義されています", lvar->name);
     }
@@ -437,7 +437,7 @@ static Node *primary() {
 
         // ローカル変数
         node = alloc_node(ND_LVAR);
-        LVar *lvar = find_lvar(tok);
+        Var *lvar = find_lvar(tok);
         if(lvar) {
             // 定義済みのローカル変数への参照
             node->lvar = lvar;

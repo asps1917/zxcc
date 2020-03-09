@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
     for(Function *func = prog; func; func = func->next) {
         int offset = 0;
         for(VarList *vl = func->locals; vl; vl = vl->next) {
-            LVar *lvar = vl->var;
+            Var *lvar = vl->var;
             offset += lvar->type->size;
             lvar->offset = offset;
         }

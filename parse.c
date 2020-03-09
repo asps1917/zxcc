@@ -355,11 +355,26 @@ static Node *mul() {
 //       | "-"? primary
 //       | "*" unary
 //       | "&" unary
+//       | "sizeof" unary
 static Node *unary() {
     if(consume("+")) return primary();
     if(consume("-")) return new_node(ND_SUB, new_node_num(0), primary());
     if(consume("*")) return new_node(ND_DEREF, unary(), NULL);
     if(consume("&")) return new_node(ND_ADDR, unary(), NULL);
+    if(consume("sizeof")) {
+        // sizeofの対象となる子ノードの型サイズを出力
+        Node *node = unary();
+        add_type(node);
+        switch(node->type->ty) {
+            case INT:
+                // 現時点では整数型は8byteとして実装している
+                return new_node_num(8);
+            case PTR:
+                return new_node_num(8);
+            default:
+                error("sizeofの対象が未実装の型です");
+        }
+    }
     return primary();
 }
 

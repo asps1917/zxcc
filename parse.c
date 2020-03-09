@@ -78,13 +78,9 @@ Function *program() {
 // パースした型を表すType構造体へのポインタを返す
 static Type *basetype() {
     expect("int");
-    Type *cur = calloc(1, sizeof(Type));
-    cur->ty = INT;
+    Type *cur = int_type;
     while(consume("*")) {
-        Type *type = calloc(1, sizeof(Type));
-        type->ty = PTR;
-        type->ptr_to = cur;
-        cur = type;
+        cur = pointer_to(cur);
     }
     return cur;
 }
@@ -153,6 +149,7 @@ static Node *declaration() {
         type_array->ty = ARRAY;
         type_array->array_len = expect_number();
         type_array->ptr_to = type;
+        type_array->size = type_array->array_len * type->size;
         type = type_array;
         expect("]");
     }
@@ -380,17 +377,7 @@ static Node *unary() {
         // sizeofの対象となる子ノードの型サイズを出力
         Node *node = unary();
         add_type(node);
-        switch(node->type->ty) {
-            case INT:
-                // 現時点では整数型は8byteとして実装している
-                return new_node_num(8);
-            case PTR:
-                return new_node_num(8);
-            case ARRAY:
-                return new_node_num(8 * node->lvar->type->array_len);
-            default:
-                error("sizeofの対象が未実装の型です");
-        }
+        return new_node_num(node->type->size);
     }
     return primary();
 }

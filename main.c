@@ -17,11 +17,7 @@ int main(int argc, char **argv) {
         int offset = 0;
         for(VarList *vl = func->locals; vl; vl = vl->next) {
             LVar *lvar = vl->var;
-            if(lvar->type->ty == ARRAY) {
-                offset += 8 * (lvar->type->array_len);
-            } else {
-                offset += 8;
-            }
+            offset += lvar->type->size;
             lvar->offset = offset;
         }
         func->stack_size = offset;

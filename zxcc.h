@@ -146,10 +146,14 @@ typedef enum {
 // 型を表す型
 struct Type {
     TypeKind ty;
+    int size;  // sizeofの返り値
     struct Type *ptr_to;
     int array_len;  // 配列の要素数
 };
 
+Type *int_type;
+
+Type *pointer_to(Type *base);
 bool is_integer(Type *type);
 void add_type(Node *node);
 

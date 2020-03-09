@@ -59,6 +59,7 @@ static Node *relational();
 static Node *add();
 static Node *mul();
 static Node *unary();
+static Node *postfix();
 static Node *primary();
 
 // program = function*
@@ -363,14 +364,11 @@ static Node *mul() {
     }
 }
 
-// unary = "+"? primary
-//       | "-"? primary
-//       | "*" unary
-//       | "&" unary
-//       | "sizeof" unary
+// unary = ("+" | "-" | "*" | "&" | "sizeof")? unary
+//       | postfix
 static Node *unary() {
-    if(consume("+")) return primary();
-    if(consume("-")) return new_node(ND_SUB, new_node_num(0), primary());
+    if(consume("+")) return unary();
+    if(consume("-")) return new_node(ND_SUB, new_node_num(0), unary());
     if(consume("*")) return new_node(ND_DEREF, unary(), NULL);
     if(consume("&")) return new_node(ND_ADDR, unary(), NULL);
     if(consume("sizeof")) {
@@ -379,7 +377,19 @@ static Node *unary() {
         add_type(node);
         return new_node_num(node->type->size);
     }
-    return primary();
+    return postfix();
+}
+
+// postfix = primary ("[" expr "]")?
+static Node *postfix() {
+    Node *node = primary();
+    if(consume("[")) {
+        // x[y]を*(x+y)として読み換える
+        Node *node_expr = expr();
+        expect("]");
+        node = new_node(ND_DEREF, new_add(node, node_expr), NULL);
+    }
+    return node;
 }
 
 // func_args = "(" (assign ("," assign)*)? ")"

@@ -2,10 +2,19 @@
 
 // パース処理中に現れたローカル変数を追加するための連結リスト
 VarList *locals;
+VarList *globals;
 
-// 変数を名前で検索する。見つからなかった場合はNULLを返す。
+// 変数を名前で検索する。検索対象はローカル変数リスト→グローバル変数リストの順番。
+// 見つからなかった場合はNULLを返す。
 static Var *find_lvar(Token *tok) {
     for(VarList *vlist = locals; vlist; vlist = vlist->next) {
+        Var *var = vlist->var;
+        if(strlen(var->name) == tok->len &&
+           !memcmp(tok->str, var->name, tok->len)) {
+            return var;
+        }
+    }
+    for(VarList *vlist = globals; vlist; vlist = vlist->next) {
         Var *var = vlist->var;
         if(strlen(var->name) == tok->len &&
            !memcmp(tok->str, var->name, tok->len)) {
@@ -25,8 +34,24 @@ static Var *new_lvar(char *name, Type *type) {
     vl->next = locals;
     lvar->name = name;
     lvar->type = type;
+    lvar->is_local = true;
     locals = vl;
     return lvar;
+}
+
+// 引数として与えられた変数名のVar構造体を生成する。
+// 生成したVar構造体はglobalsリストに追加される。
+static Var *new_gvar(char *name, Type *type) {
+    Var *gvar = calloc(1, sizeof(Var));
+    VarList *vl = calloc(1, sizeof(VarList));
+
+    vl->var = gvar;
+    vl->next = globals;
+    gvar->name = name;
+    gvar->type = type;
+    gvar->is_local = false;
+    globals = vl;
+    return gvar;
 }
 
 static Node *alloc_node(NodeKind kind) {
@@ -48,7 +73,9 @@ static Node *new_node_num(int val) {
     return node;
 }
 
+static Type *basetype();
 static Function *function();
+static void global_var();
 static Node *declaration();
 static Node *stmt();
 static Node *stmt2();
@@ -62,14 +89,28 @@ static Node *unary();
 static Node *postfix();
 static Node *primary();
 
-// program = function*
+// 現在のトークンが関数か判定する
+static bool is_function() {
+    Token *cur = token;
+    basetype();
+    bool retval = consume_ident() && consume("(");
+    token = cur;
+    return retval;
+}
+
+// program = (global_var | function)*
 Function *program() {
     Function head = {};
     Function *cur = &head;
 
     while(!at_eof()) {
-        cur->next = function();
-        cur = cur->next;
+        if(is_function()) {
+            cur->next = function();
+            cur = cur->next;
+        } else {
+            // グローバル変数
+            global_var();
+        }
     }
 
     return head.next;
@@ -137,6 +178,34 @@ static Function *function() {
     return func;
 }
 
+// global_var = basetype ident ("[" num "]")? ";"
+static void global_var() {
+    Type *type = basetype();
+    Token *tok = consume_ident();
+    if(!tok) {
+        error("変数定義の構文エラー");
+    }
+
+    if(consume("[")) {
+        // 配列の定義
+        Type *type_array = calloc(1, sizeof(Type));
+        type_array->ty = ARRAY;
+        type_array->array_len = expect_number();
+        type_array->ptr_to = type;
+        type_array->size = type_array->array_len * type->size;
+        type = type_array;
+        expect("]");
+    }
+    expect(";");
+
+    // global変数に定義した変数を追加
+    Var *lvar = find_lvar(tok);
+    if(lvar) {
+        error("変数%sは重複して定義されています", lvar->name);
+    }
+    new_gvar(strndup(tok->str, tok->len), type);
+}
+
 // declaration = basetype ident ("[" num "]")? ";"
 static Node *declaration() {
     Type *type = basetype();
@@ -159,7 +228,7 @@ static Node *declaration() {
     // localsに定義した変数を追加
     Node *node = alloc_node(ND_NULL);
     Var *lvar = find_lvar(tok);
-    if(lvar) {
+    if(lvar && lvar->is_local) {
         error("変数%sは重複して定義されています", lvar->name);
     }
     lvar = new_lvar(strndup(tok->str, tok->len), type);

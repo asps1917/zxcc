@@ -15,9 +15,14 @@ static void gen_lval(Node *node) {
     debug_printf("gen_lval");
     switch(node->kind) {
         case ND_LVAR:
-            printf("  mov rax, rbp\n");
-            printf("  sub rax, %d\n", node->lvar->offset);
-            printf("  push rax\n");
+            if(node->lvar->is_local) {
+                printf("  mov rax, rbp\n");
+                printf("  sub rax, %d\n", node->lvar->offset);
+                printf("  push rax\n");
+            } else {
+                // グローバル変数
+                printf("  push offset %s\n", node->lvar->name);
+            }
             break;
         case ND_DEREF:
             gen(node->lhs);
@@ -276,15 +281,34 @@ static void funcgen(Function *func) {
     printf("  ret\n");
 }
 
+// データセグメントをアセンブリに出力する
+static void gen_data_seg() {
+    printf(".data\n");
+
+    // グローバル変数を出力
+    for(VarList *vlist = globals; vlist; vlist = vlist->next) {
+        Var *gvar = vlist->var;
+        printf("%s:\n", gvar->name);
+        printf("  .zero %d\n", gvar->type->size);
+    }
+}
+
+// テキストセグメントをアセンブリに出力する
+static void gen_text_seg(Function *prog) {
+    printf(".text\n");
+
+    // 関数を出力
+    for(Function *func = prog; func; func = func->next) {
+        funcgen(func);
+    }
+}
+
 void codegen(Function *prog) {
     label_seq_num = 0;
 
     printf(".intel_syntax noprefix\n");
-
-    // 関数をアセンブリに出力
-    for(Function *func = prog; func; func = func->next) {
-        funcgen(func);
-    }
+    gen_data_seg();
+    gen_text_seg(prog);
 }
 
 int is_debug = 0;

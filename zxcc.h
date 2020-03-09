@@ -78,12 +78,13 @@ typedef enum {
     ND_NULL,      // null
 } NodeKind;
 
-// ローカル変数の型
+// 変数の型
 typedef struct Var Var;
 struct Var {
-    char *name;  // 変数の名前
-    int offset;  // RBPからのオフセット
-    Type *type;  // 変数の型
+    char *name;     // 変数の名前
+    int offset;     // RBPからのオフセット
+    Type *type;     // 変数の型
+    bool is_local;  // ローカル変数か
 };
 
 typedef struct VarList VarList;
@@ -131,6 +132,8 @@ struct Function {
     VarList *locals;
     int stack_size;
 };
+
+VarList *globals;
 
 Function *program();
 

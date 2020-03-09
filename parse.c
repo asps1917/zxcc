@@ -49,6 +49,7 @@ static Node *new_node_num(int val) {
 }
 
 static Function *function();
+static Node *declaration();
 static Node *stmt();
 static Node *stmt2();
 static Node *expr();
@@ -139,6 +140,26 @@ static Function *function() {
     return func;
 }
 
+// declaration = basetype ident ";"
+static Node *declaration() {
+    Type *type = basetype();
+    Token *tok = consume_ident();
+    if(!tok) {
+        error("変数定義の構文エラー");
+    }
+    expect(";");
+
+    // localsに定義した変数を追加
+    Node *node = alloc_node(ND_LVAR);
+    LVar *lvar = find_lvar(tok);
+    if(lvar) {
+        error("変数%sは重複して定義されています", lvar->name);
+    }
+    lvar = new_lvar(strndup(tok->str, tok->len), type);
+    node->lvar = lvar;
+    return node;
+}
+
 static Node *stmt() {
     Node *node = stmt2();
     // stmt2によって生成されたノードツリーの各ノードに型を設定する
@@ -152,7 +173,7 @@ static Node *stmt() {
 //      | "while" "(" expr ")" stmt
 //      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //      | expr ";"
-//      | basetype ident ";"
+//      | declaration
 static Node *stmt2() {
     Node *node;
 
@@ -224,22 +245,7 @@ static Node *stmt2() {
 
     // 変数定義
     if(match("int")) {
-        Type *type = basetype();
-        Token *tok = consume_ident();
-        if(!tok) {
-            error("変数定義の構文エラー");
-        }
-        expect(";");
-
-        // localsに定義した変数を追加
-        node = alloc_node(ND_LVAR);
-        LVar *lvar = find_lvar(tok);
-        if(lvar) {
-            error("変数%sは重複して定義されています", lvar->name);
-        }
-        lvar = new_lvar(strndup(tok->str, tok->len), type);
-        node->lvar = lvar;
-        return node;
+        return declaration();
     }
 
     node = expr();

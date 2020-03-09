@@ -140,12 +140,21 @@ static Function *function() {
     return func;
 }
 
-// declaration = basetype ident ";"
+// declaration = basetype ident ("[" num "]")? ";"
 static Node *declaration() {
     Type *type = basetype();
     Token *tok = consume_ident();
     if(!tok) {
         error("変数定義の構文エラー");
+    }
+    if(consume("[")) {
+        // 配列の定義
+        Type *type_array = calloc(1, sizeof(Type));
+        type_array->ty = ARRAY;
+        type_array->array_len = expect_number();
+        type_array->ptr_to = type;
+        type = type_array;
+        expect("]");
     }
     expect(";");
 
@@ -377,6 +386,8 @@ static Node *unary() {
                 return new_node_num(8);
             case PTR:
                 return new_node_num(8);
+            case ARRAY:
+                return new_node_num(8 * node->lvar->type->array_len);
             default:
                 error("sizeofの対象が未実装の型です");
         }

@@ -39,7 +39,6 @@ void add_type(Node *node) {
         case ND_NE:
         case ND_LT:
         case ND_LE:
-        case ND_LVAR:
         case ND_FUNCCALL:
         case ND_NUM:
             node->type = int_type;
@@ -49,14 +48,21 @@ void add_type(Node *node) {
         case ND_ASSIGN:
             node->type = node->lhs->type;
             return;
+        case ND_LVAR:
+            node->type = node->lvar->type;
+            return;
         case ND_ADDR:
-            node->type = pointer_to(node->lhs->type);
+            if(node->lhs->type->ty == ARRAY) {
+                node->type = pointer_to(node->lhs->type->ptr_to);
+            } else {
+                node->type = pointer_to(node->lhs->type);
+            }
             return;
         case ND_DEREF:
-            if(node->lhs->type->ty == PTR)
-                node->type = node->lhs->type->ptr_to;
-            else
-                node->type = int_type;
+            if(!node->lhs->type->ptr_to) {
+                error("無効なデリファレンスです");
+            }
+            node->type = node->lhs->type->ptr_to;
             return;
     }
 }

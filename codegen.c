@@ -39,9 +39,11 @@ static void gen(Node *node) {
         case ND_LVAR:
             debug_printf("gen - ND_LVAR");
             gen_lval(node);
-            printf("  pop rax\n");
-            printf("  mov rax, [rax]\n");
-            printf("  push rax\n");
+            if(node->type->ty != ARRAY) {
+                printf("  pop rax\n");
+                printf("  mov rax, [rax]\n");
+                printf("  push rax\n");
+            }
             debug_printf("gen - ND_LVAR end");
             return;
         case ND_ASSIGN:
@@ -62,9 +64,11 @@ static void gen(Node *node) {
         case ND_DEREF:
             debug_printf("gen - ND_DEREF");
             gen(node->lhs);
-            printf("  pop rax\n");
-            printf("  mov rax, [rax]\n");
-            printf("  push rax\n");
+            if(node->type->ty != ARRAY) {
+                printf("  pop rax\n");
+                printf("  mov rax, [rax]\n");
+                printf("  push rax\n");
+            }
             debug_printf("gen - ND_DEREF end");
             return;
         case ND_RETURN:

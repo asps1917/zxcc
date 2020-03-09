@@ -138,14 +138,16 @@ Function *program();
 //
 
 typedef enum {
-    INT,  // 整数
-    PTR,  // ポインタ
+    INT,    // 整数
+    PTR,    // ポインタ
+    ARRAY,  // 配列
 } TypeKind;
 
 // 型を表す型
 struct Type {
     TypeKind ty;
     struct Type *ptr_to;
+    int array_len;  // 配列の要素数
 };
 
 bool is_integer(Type *type);

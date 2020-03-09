@@ -364,19 +364,13 @@ static Node *mul() {
     }
 }
 
-// unary = ("+" | "-" | "*" | "&" | "sizeof")? unary
+// unary = ("+" | "-" | "*" | "&")? unary
 //       | postfix
 static Node *unary() {
     if(consume("+")) return unary();
     if(consume("-")) return new_node(ND_SUB, new_node_num(0), unary());
     if(consume("*")) return new_node(ND_DEREF, unary(), NULL);
     if(consume("&")) return new_node(ND_ADDR, unary(), NULL);
-    if(consume("sizeof")) {
-        // sizeofの対象となる子ノードの型サイズを出力
-        Node *node = unary();
-        add_type(node);
-        return new_node_num(node->type->size);
-    }
     return postfix();
 }
 
@@ -411,12 +405,21 @@ static Node *func_args() {
 // primary = num
 //         | ident func_args?
 //         | "(" expr ")"
+//         | "sizeof" unary
 static Node *primary() {
     // 次のトークンが"("なら、"(" expr ")"のはず
     if(consume("(")) {
         Node *node = expr();
         expect(")");
         return node;
+    }
+
+    // sizeof
+    if(consume("sizeof")) {
+        // 演算対象となる子ノードの型サイズを出力
+        Node *node = unary();
+        add_type(node);
+        return new_node_num(node->type->size);
     }
 
     // identトークンのチェック

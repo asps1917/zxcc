@@ -32,6 +32,9 @@ static void gen_lval(Node *node) {
 static void gen(Node *node) {
     int label_num;
     switch(node->kind) {
+        case ND_NULL:
+            // 何もしない
+            return;
         case ND_NUM:
             debug_printf("gen - ND_NUM");
             printf("  push %d\n", node->val);

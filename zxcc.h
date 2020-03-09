@@ -75,6 +75,7 @@ typedef enum {
     ND_FUNCCALL,  // 関数呼び出し
     ND_ADDR,      // 単項 &
     ND_DEREF,     // 単項 *
+    ND_NULL,      // null
 } NodeKind;
 
 // ローカル変数の型

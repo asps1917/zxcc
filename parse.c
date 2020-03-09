@@ -157,7 +157,7 @@ static Node *declaration() {
     expect(";");
 
     // localsに定義した変数を追加
-    Node *node = alloc_node(ND_LVAR);
+    Node *node = alloc_node(ND_NULL);
     Var *lvar = find_lvar(tok);
     if(lvar) {
         error("変数%sは重複して定義されています", lvar->name);

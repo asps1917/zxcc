@@ -24,17 +24,23 @@ static Var *find_lvar(Token *tok) {
     return NULL;
 }
 
+// 引数として与えられた変数名のVar構造体を生成する
+static Var *new_var(char *name, Type *type, bool is_local) {
+    Var *var = calloc(1, sizeof(Var));
+    var->name = name;
+    var->type = type;
+    var->is_local = is_local;
+    return var;
+}
+
 // 引数として与えられた変数名のVar構造体を生成する。
 // 生成したVar構造体はlocalsリストに追加される。
 static Var *new_lvar(char *name, Type *type) {
-    Var *lvar = calloc(1, sizeof(Var));
+    Var *lvar = new_var(name, type, true);
     VarList *vl = calloc(1, sizeof(VarList));
 
     vl->var = lvar;
     vl->next = locals;
-    lvar->name = name;
-    lvar->type = type;
-    lvar->is_local = true;
     locals = vl;
     return lvar;
 }
@@ -42,14 +48,11 @@ static Var *new_lvar(char *name, Type *type) {
 // 引数として与えられた変数名のVar構造体を生成する。
 // 生成したVar構造体はglobalsリストに追加される。
 static Var *new_gvar(char *name, Type *type) {
-    Var *gvar = calloc(1, sizeof(Var));
+    Var *gvar = new_var(name, type, false);
     VarList *vl = calloc(1, sizeof(VarList));
 
     vl->var = gvar;
     vl->next = globals;
-    gvar->name = name;
-    gvar->type = type;
-    gvar->is_local = false;
     globals = vl;
     return gvar;
 }

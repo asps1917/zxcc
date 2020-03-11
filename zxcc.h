@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#include <assert.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -145,6 +146,7 @@ typedef enum {
     INT,    // 整数
     PTR,    // ポインタ
     ARRAY,  // 配列
+    CHAR,   // 文字
 } TypeKind;
 
 // 型を表す型
@@ -155,6 +157,7 @@ struct Type {
     int array_len;  // 配列の要素数
 };
 
+Type *char_type;
 Type *int_type;
 
 Type *pointer_to(Type *base);

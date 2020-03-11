@@ -120,11 +120,18 @@ Function *program() {
     return head.next;
 }
 
-// basetype = "int" "*"*
+// basetype = ("int" | "char") "*"*
 // パースした型を表すType構造体へのポインタを返す
 static Type *basetype() {
-    expect("int");
-    Type *cur = int_type;
+    Type *cur;
+    if(consume("int")) {
+        cur = int_type;
+    } else if(consume("char")) {
+        cur = char_type;
+    } else {
+        error("不正な型です");
+    }
+
     while(consume("*")) {
         cur = pointer_to(cur);
     }
@@ -311,7 +318,7 @@ static Node *stmt2() {
     }
 
     // 変数定義
-    if(match("int")) {
+    if(match("int") || match("char")) {
         return declaration();
     }
 

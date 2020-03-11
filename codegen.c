@@ -4,7 +4,8 @@
 int label_seq_num;
 static char *func_name;
 
-static char *regs_for_args[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+static char *regs_for_args_8[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+static char *regs_for_args_1[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
 
 static void debug_printf(char *fmt, ...);
 static void gen(Node *node);
@@ -33,16 +34,26 @@ static void gen_lval(Node *node) {
     debug_printf("gen_lval end");
 }
 
-static void load(void) {
+static void load(Type *type) {
     printf("  pop rax\n");
-    printf("  mov rax, [rax]\n");
+    if(type->size == 1) {
+        // raxが指しているアドレスから1byteロードする(符号拡張あり)
+        printf("  movsx rax, byte ptr [rax]\n");
+    } else {
+        printf("  mov rax, [rax]\n");
+    }
     printf("  push rax\n");
 }
 
-static void store(void) {
+static void store(Type *type) {
     printf("  pop rdi\n");
     printf("  pop rax\n");
-    printf("  mov [rax], rdi\n");
+    if(type->size == 1) {
+        // dilから1byteストアする
+        printf("  mov [rax], dil\n");
+    } else {
+        printf("  mov [rax], rdi\n");
+    }
     printf("  push rdi\n");
 }
 
@@ -61,7 +72,7 @@ static void gen(Node *node) {
             debug_printf("gen - ND_VAR");
             gen_lval(node);
             if(node->type->ty != ARRAY) {
-                load();
+                load(node->type);
             }
             debug_printf("gen - ND_VAR end");
             return;
@@ -69,7 +80,7 @@ static void gen(Node *node) {
             debug_printf("gen - ND_ASSIGN");
             gen_lval(node->lhs);  // 左辺: 変数のアドレスをpush
             gen(node->rhs);       // 右辺: 数値をpush
-            store();
+            store(node->type);
             debug_printf("gen - ND_ASSIGN end");
             return;
         case ND_ADDR:
@@ -81,7 +92,7 @@ static void gen(Node *node) {
             debug_printf("gen - ND_DEREF");
             gen(node->lhs);
             if(node->type->ty != ARRAY) {
-                load();
+                load(node->type);
             }
             debug_printf("gen - ND_DEREF end");
             return;
@@ -168,7 +179,7 @@ static void gen(Node *node) {
                 error("%s: , 7個以上の引数を持つ関数です", node->func_name);
             }
             for(int i = args_count - 1; i >= 0; i--) {
-                printf("  pop %s\n", regs_for_args[i]);
+                printf("  pop %s\n", regs_for_args_8[i]);
             }
 
             // x86-64のABIに従ってcall命令実行前にrspを16バイトでアライメントする必要がある
@@ -258,6 +269,17 @@ static void gen(Node *node) {
     printf("  push rax\n");
 }
 
+// レジスタ上の引数をスタック領域にコピーする処理をアセンブリに出力する
+static void load_arg(Var *var, int idx) {
+    int size = var->type->size;
+    if(size == 1) {
+        printf("  mov [rbp-%d], %s\n", var->offset, regs_for_args_1[idx]);
+    } else {
+        assert(size == 8);
+        printf("  mov [rbp-%d], %s\n", var->offset, regs_for_args_8[idx]);
+    }
+}
+
 // 関数をアセンブリとして出力する
 static void funcgen(Function *func) {
     func_name = func->name;
@@ -271,7 +293,7 @@ static void funcgen(Function *func) {
     // レジスタ上の引数をスタック領域にコピー
     int i = 0;
     for(VarList *arg = func->args; arg; arg = arg->next) {
-        printf("  mov [rbp-%d], %s\n", arg->var->offset, regs_for_args[i++]);
+        load_arg(arg->var, i++);
     }
 
     // 先頭の式から順にコード生成

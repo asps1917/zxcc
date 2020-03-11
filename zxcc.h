@@ -158,6 +158,7 @@ struct Type {
 Type *int_type;
 
 Type *pointer_to(Type *base);
+Type *array_of(Type *base, int len);
 bool is_integer(Type *type);
 void add_type(Node *node);
 

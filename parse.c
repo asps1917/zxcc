@@ -191,11 +191,7 @@ static void global_var() {
 
     if(consume("[")) {
         // 配列の定義
-        Type *type_array = calloc(1, sizeof(Type));
-        type_array->ty = ARRAY;
-        type_array->array_len = expect_number();
-        type_array->ptr_to = type;
-        type_array->size = type_array->array_len * type->size;
+        Type *type_array = array_of(type, expect_number());
         type = type_array;
         expect("]");
     }
@@ -218,11 +214,7 @@ static Node *declaration() {
     }
     if(consume("[")) {
         // 配列の定義
-        Type *type_array = calloc(1, sizeof(Type));
-        type_array->ty = ARRAY;
-        type_array->array_len = expect_number();
-        type_array->ptr_to = type;
-        type_array->size = type_array->array_len * type->size;
+        Type *type_array = array_of(type, expect_number());
         type = type_array;
         expect("]");
     }

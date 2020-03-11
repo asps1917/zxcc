@@ -13,6 +13,16 @@ Type *pointer_to(Type *base) {
     return ty;
 }
 
+// 引数baseに対する配列型を返す。
+Type *array_of(Type *base, int len) {
+    Type *ty = calloc(1, sizeof(Type));
+    ty->ty = ARRAY;
+    ty->size = base->size * len;
+    ty->ptr_to = base;
+    ty->array_len = len;
+    return ty;
+}
+
 // 引数nodeと子ノードに対して、そのnodeを評価した結果適用される型をセットする。
 // 例: "1 + 1"を表すnodeには整数型がセットされる。
 //     "&x + 1"を表すnodeにはポインタ型がセットされる。

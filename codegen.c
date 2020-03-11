@@ -33,6 +33,19 @@ static void gen_lval(Node *node) {
     debug_printf("gen_lval end");
 }
 
+static void load(void) {
+    printf("  pop rax\n");
+    printf("  mov rax, [rax]\n");
+    printf("  push rax\n");
+}
+
+static void store(void) {
+    printf("  pop rdi\n");
+    printf("  pop rax\n");
+    printf("  mov [rax], rdi\n");
+    printf("  push rdi\n");
+}
+
 // 抽象構文木の根ノードを受け取りスタックマシンのコードを生成する
 static void gen(Node *node) {
     int label_num;
@@ -48,9 +61,7 @@ static void gen(Node *node) {
             debug_printf("gen - ND_LVAR");
             gen_lval(node);
             if(node->type->ty != ARRAY) {
-                printf("  pop rax\n");
-                printf("  mov rax, [rax]\n");
-                printf("  push rax\n");
+                load();
             }
             debug_printf("gen - ND_LVAR end");
             return;
@@ -58,10 +69,7 @@ static void gen(Node *node) {
             debug_printf("gen - ND_ASSIGN");
             gen_lval(node->lhs);  // 左辺: 変数のアドレスをpush
             gen(node->rhs);       // 右辺: 数値をpush
-            printf("  pop rdi\n");
-            printf("  pop rax\n");
-            printf("  mov [rax], rdi\n");
-            printf("  push rdi\n");
+            store();
             debug_printf("gen - ND_ASSIGN end");
             return;
         case ND_ADDR:
@@ -73,9 +81,7 @@ static void gen(Node *node) {
             debug_printf("gen - ND_DEREF");
             gen(node->lhs);
             if(node->type->ty != ARRAY) {
-                printf("  pop rax\n");
-                printf("  mov rax, [rax]\n");
-                printf("  push rax\n");
+                load();
             }
             debug_printf("gen - ND_DEREF end");
             return;

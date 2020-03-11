@@ -6,18 +6,19 @@ VarList *globals;
 
 // 変数を名前で検索する。検索対象はローカル変数リスト→グローバル変数リストの順番。
 // 見つからなかった場合はNULLを返す。
-static Var *find_lvar(Token *tok) {
+static Var *find_lvar(char *var_name) {
+    int var_len = strlen(var_name);
     for(VarList *vlist = locals; vlist; vlist = vlist->next) {
         Var *var = vlist->var;
-        if(strlen(var->name) == tok->len &&
-           !memcmp(tok->str, var->name, tok->len)) {
+        if(strlen(var->name) == var_len &&
+           !strncmp(var_name, var->name, var_len)) {
             return var;
         }
     }
     for(VarList *vlist = globals; vlist; vlist = vlist->next) {
         Var *var = vlist->var;
-        if(strlen(var->name) == tok->len &&
-           !memcmp(tok->str, var->name, tok->len)) {
+        if(strlen(var->name) == var_len &&
+           !strncmp(var_name, var->name, var_len)) {
             return var;
         }
     }
@@ -184,10 +185,7 @@ static Function *function() {
 // global_var = basetype ident ("[" num "]")? ";"
 static void global_var() {
     Type *type = basetype();
-    Token *tok = consume_ident();
-    if(!tok) {
-        error("変数定義の構文エラー");
-    }
+    char *var_name = expect_ident();
 
     if(consume("[")) {
         // 配列の定義
@@ -198,20 +196,18 @@ static void global_var() {
     expect(";");
 
     // global変数に定義した変数を追加
-    Var *lvar = find_lvar(tok);
+    Var *lvar = find_lvar(var_name);
     if(lvar) {
         error("変数%sは重複して定義されています", lvar->name);
     }
-    new_gvar(strndup(tok->str, tok->len), type);
+    new_gvar(strndup(var_name, strlen(var_name)), type);
 }
 
 // declaration = basetype ident ("[" num "]")? ";"
 static Node *declaration() {
     Type *type = basetype();
-    Token *tok = consume_ident();
-    if(!tok) {
-        error("変数定義の構文エラー");
-    }
+    char *var_name = expect_ident();
+
     if(consume("[")) {
         // 配列の定義
         Type *type_array = array_of(type, expect_number());
@@ -222,11 +218,11 @@ static Node *declaration() {
 
     // localsに定義した変数を追加
     Node *node = alloc_node(ND_NULL);
-    Var *lvar = find_lvar(tok);
+    Var *lvar = find_lvar(var_name);
     if(lvar && lvar->is_local) {
         error("変数%sは重複して定義されています", lvar->name);
     }
-    lvar = new_lvar(strndup(tok->str, tok->len), type);
+    lvar = new_lvar(strndup(var_name, strlen(var_name)), type);
     node->lvar = lvar;
     return node;
 }
@@ -501,15 +497,15 @@ static Node *primary() {
 
         // ローカル変数
         node = alloc_node(ND_LVAR);
-        Var *lvar = find_lvar(tok);
+        char *var_name = strndup(tok->str, tok->len);
+        Var *lvar = find_lvar(var_name);
         if(lvar) {
             // 定義済みのローカル変数への参照
             node->lvar = lvar;
             return node;
         } else {
             // 未定義のローカル変数
-            char *s = strndup(tok->str, tok->len);
-            error("未定義のローカル変数%sを参照しています", s);
+            error("未定義のローカル変数%sを参照しています", var_name);
         }
     }
 

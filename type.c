@@ -59,7 +59,7 @@ void add_type(Node *node) {
         case ND_ASSIGN:
             node->type = node->lhs->type;
             return;
-        case ND_LVAR:
+        case ND_VAR:
             node->type = node->lvar->type;
             return;
         case ND_ADDR:

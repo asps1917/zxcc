@@ -496,7 +496,7 @@ static Node *primary() {
         }
 
         // ローカル変数
-        node = alloc_node(ND_LVAR);
+        node = alloc_node(ND_VAR);
         char *var_name = strndup(tok->str, tok->len);
         Var *lvar = find_lvar(var_name);
         if(lvar) {

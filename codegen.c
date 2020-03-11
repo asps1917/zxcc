@@ -14,7 +14,7 @@ static void gen(Node *node);
 static void gen_lval(Node *node) {
     debug_printf("gen_lval");
     switch(node->kind) {
-        case ND_LVAR:
+        case ND_VAR:
             if(node->lvar->is_local) {
                 printf("  mov rax, rbp\n");
                 printf("  sub rax, %d\n", node->lvar->offset);
@@ -57,13 +57,13 @@ static void gen(Node *node) {
             debug_printf("gen - ND_NUM");
             printf("  push %d\n", node->val);
             return;
-        case ND_LVAR:
-            debug_printf("gen - ND_LVAR");
+        case ND_VAR:
+            debug_printf("gen - ND_VAR");
             gen_lval(node);
             if(node->type->ty != ARRAY) {
                 load();
             }
-            debug_printf("gen - ND_LVAR end");
+            debug_printf("gen - ND_VAR end");
             return;
         case ND_ASSIGN:
             debug_printf("gen - ND_ASSIGN");

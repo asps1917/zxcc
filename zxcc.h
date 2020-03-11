@@ -65,7 +65,7 @@ typedef enum {
     ND_LT,        // <
     ND_LE,        // <=
     ND_ASSIGN,    // =
-    ND_LVAR,      // ローカル変数
+    ND_VAR,       // ローカル変数
     ND_NUM,       // 整数
     ND_RETURN,    // return
     ND_IF,        // if
@@ -118,7 +118,7 @@ struct Node {
     char *func_name;
     Node *args;
 
-    // ND_LVAR用
+    // ND_VAR用
     Var *lvar;
 };
 

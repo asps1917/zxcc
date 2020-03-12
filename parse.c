@@ -213,7 +213,7 @@ static void global_var() {
     new_gvar(strndup(var_name, strlen(var_name)), type);
 }
 
-// declaration = basetype ident ("[" num "]")? ";"
+// declaration = basetype ident ("[" num "]")? ("=" expr)? ";"
 static Node *declaration() {
     Type *type = basetype();
     char *var_name = expect_ident();
@@ -224,17 +224,26 @@ static Node *declaration() {
         type = type_array;
         expect("]");
     }
-    expect(";");
 
-    // localsに定義した変数を追加
-    Node *node = alloc_node(ND_NULL);
     Var *lvar = find_lvar(var_name);
     if(lvar && lvar->is_local) {
         error("変数%sは重複して定義されています", lvar->name);
     }
+    // localsに定義した変数を追加
     lvar = new_lvar(strndup(var_name, strlen(var_name)), type);
-    node->lvar = lvar;
-    return node;
+
+    if(consume(";")) {
+        // 関数宣言のみ
+        return alloc_node(ND_NULL);
+    }
+
+    // 関数宣言 + 代入式
+    expect("=");
+    Node *node_expr = expr();
+    expect(";");
+    Node *node_var = alloc_node(ND_VAR);
+    node_var->lvar = lvar;
+    return new_node(ND_ASSIGN, node_var, node_expr);
 }
 
 static Node *stmt() {

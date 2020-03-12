@@ -11,11 +11,11 @@ int main(int argc, char **argv) {
     // トークナイズしてパースする
     user_input = argv[1];
     token = tokenize();
-    Function *prog = program();
+    Program *prog = program();
 
     // ローカル変数のオフセット設定 & スタックサイズ算出
     // localsリスト上の各ローカル変数に8byteずつ割り当てる
-    for(Function *func = prog; func; func = func->next) {
+    for(Function *func = prog->funcs; func; func = func->next) {
         int offset = 0;
         for(VarList *vl = func->locals; vl; vl = vl->next) {
             Var *lvar = vl->var;

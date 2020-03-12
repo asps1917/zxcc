@@ -1,8 +1,8 @@
 #include "zxcc.h"
 
 // パース処理中に現れたローカル変数を追加するための連結リスト
-VarList *locals;
-VarList *globals;
+static VarList *locals;
+static VarList *globals;
 
 // 変数を名前で検索する。検索対象はローカル変数リスト→グローバル変数リストの順番。
 // 見つからなかった場合はNULLを返す。
@@ -103,9 +103,10 @@ static bool is_function() {
 }
 
 // program = (global_var | function)*
-Function *program() {
+Program *program() {
     Function head = {};
     Function *cur = &head;
+    globals = NULL;
 
     while(!at_eof()) {
         if(is_function()) {
@@ -116,8 +117,10 @@ Function *program() {
             global_var();
         }
     }
-
-    return head.next;
+    Program *prog = calloc(1, sizeof(Program));
+    prog->funcs = head.next;
+    prog->globals = globals;
+    return prog;
 }
 
 // basetype = ("int" | "char") "*"*

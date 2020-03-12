@@ -310,11 +310,11 @@ static void funcgen(Function *func) {
 }
 
 // データセグメントをアセンブリに出力する
-static void gen_data_seg() {
+static void gen_data_seg(Program *prog) {
     printf(".data\n");
 
     // グローバル変数を出力
-    for(VarList *vlist = globals; vlist; vlist = vlist->next) {
+    for(VarList *vlist = prog->globals; vlist; vlist = vlist->next) {
         Var *gvar = vlist->var;
         printf("%s:\n", gvar->name);
         printf("  .zero %d\n", gvar->type->size);
@@ -322,20 +322,20 @@ static void gen_data_seg() {
 }
 
 // テキストセグメントをアセンブリに出力する
-static void gen_text_seg(Function *prog) {
+static void gen_text_seg(Program *prog) {
     printf(".text\n");
 
     // 関数を出力
-    for(Function *func = prog; func; func = func->next) {
+    for(Function *func = prog->funcs; func; func = func->next) {
         funcgen(func);
     }
 }
 
-void codegen(Function *prog) {
+void codegen(Program *prog) {
     label_seq_num = 0;
 
     printf(".intel_syntax noprefix\n");
-    gen_data_seg();
+    gen_data_seg(prog);
     gen_text_seg(prog);
 }
 

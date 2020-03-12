@@ -134,9 +134,13 @@ struct Function {
     int stack_size;
 };
 
-VarList *globals;
+typedef struct Program Program;
+struct Program {
+    VarList *globals;
+    Function *funcs;
+};
 
-Function *program();
+Program *program();
 
 //
 // type.c
@@ -169,4 +173,4 @@ void add_type(Node *node);
 // codegen.c
 //
 
-void codegen(Function *prog);
+void codegen(Program *prog);

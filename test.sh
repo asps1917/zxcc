@@ -162,4 +162,13 @@ try 99 'int main() { return "abc"[2]; }'
 try 0 'int main() { return "abc"[3]; }'
 try 4 'int main() { return sizeof("abc"); }'
 
+try 0 'int main() { int x = 0;
+                    // x = 1;
+                    return x; }'
+try 45 'int main() { int i; int x=0;
+                    for(i=0;i<10 /* block // comment */;i = i+1) {
+                      x = x + i;
+                    }
+                    return x; }'
+
 echo OK

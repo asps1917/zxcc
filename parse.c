@@ -6,7 +6,7 @@ static VarList *globals;
 
 // 変数を名前で検索する。検索対象はローカル変数リスト→グローバル変数リストの順番。
 // 見つからなかった場合はNULLを返す。
-static Var *find_lvar(char *var_name) {
+static Var *find_var(char *var_name) {
     int var_len = strlen(var_name);
     for(VarList *vlist = locals; vlist; vlist = vlist->next) {
         Var *var = vlist->var;
@@ -214,7 +214,7 @@ static void global_var() {
     expect(";");
 
     // global変数に定義した変数を追加
-    Var *lvar = find_lvar(var_name);
+    Var *lvar = find_var(var_name);
     if(lvar) {
         error("変数%sは重複して定義されています", lvar->name);
     }
@@ -233,7 +233,7 @@ static Node *declaration() {
         expect("]");
     }
 
-    Var *lvar = find_lvar(var_name);
+    Var *lvar = find_var(var_name);
     if(lvar && lvar->is_local) {
         error("変数%sは重複して定義されています", lvar->name);
     }
@@ -526,7 +526,7 @@ static Node *primary() {
         // ローカル変数
         node = alloc_node(ND_VAR);
         char *var_name = strndup(tok->str, tok->len);
-        Var *lvar = find_lvar(var_name);
+        Var *lvar = find_var(var_name);
         if(lvar) {
             // 定義済みのローカル変数への参照
             node->lvar = lvar;

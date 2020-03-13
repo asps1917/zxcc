@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -39,6 +40,7 @@ struct Token {
 
 extern Token *token;
 extern char *user_input;
+extern char *filename;
 
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);

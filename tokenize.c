@@ -165,6 +165,59 @@ static char *is_reserved(char *p) {
     return NULL;
 }
 
+// エスケープシーケンスを取得する
+static char get_escape_char(char c) {
+    switch(c) {
+        case 'a':
+            return '\a';
+        case 'b':
+            return '\b';
+        case 't':
+            return '\t';
+        case 'n':
+            return '\n';
+        case 'v':
+            return '\v';
+        case 'f':
+            return '\f';
+        case 'r':
+            return '\r';
+        case 'e':
+            return 27;
+        case '0':
+            return 0;
+        default:
+            return c;
+    }
+}
+
+// 文字列リテラルを読み出す
+static Token *read_string_literal(Token *cur, char *start) {
+    char *p = start + 1;
+    char buf[1024];
+    int len = 0;
+
+    for(;;) {
+        if(len == sizeof(buf)) error_at(start, "string literal too large");
+        if(*p == '\0') error_at(start, "unclosed string literal");
+        if(*p == '"') break;
+
+        if(*p == '\\') {
+            p++;
+            buf[len++] = get_escape_char(*p++);
+        } else {
+            buf[len++] = *p++;
+        }
+    }
+
+    Token *tok = new_token(TK_STR, cur, start, p - start + 1);
+    tok->contents = malloc(len + 1);
+    memcpy(tok->contents, buf, len);
+    tok->contents[len] = '\0';
+    tok->cont_len = len + 1;
+    return tok;
+}
+
 // 入力文字列user_inputをトークナイズしてそれを返す
 Token *tokenize() {
     char *p = user_input;
@@ -226,16 +279,8 @@ Token *tokenize() {
 
         // 文字列リテラル
         if(*p == '"') {
-            p++;
-            char *q = p;
-            while(*p != '"') {
-                p++;
-            }
-            cur = new_token(TK_STR, cur, q, (p - q));
-            // strndupはヌル終端文字を追加した文字列を返す
-            cur->contents = strndup(q, (p - q));
-            cur->cont_len = p - q + 1;
-            p++;
+            cur = read_string_literal(cur, p);
+            p += cur->len;
             continue;
         }
 

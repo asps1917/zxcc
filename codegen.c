@@ -16,13 +16,13 @@ static void gen_lval(Node *node) {
     debug_printf("gen_lval");
     switch(node->kind) {
         case ND_VAR:
-            if(node->lvar->is_local) {
+            if(node->var->is_local) {
                 printf("  mov rax, rbp\n");
-                printf("  sub rax, %d\n", node->lvar->offset);
+                printf("  sub rax, %d\n", node->var->offset);
                 printf("  push rax\n");
             } else {
                 // グローバル変数 or 文字列リテラル
-                printf("  push offset %s\n", node->lvar->name);
+                printf("  push offset %s\n", node->var->name);
             }
             break;
         case ND_DEREF:

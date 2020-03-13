@@ -131,7 +131,7 @@ struct Node {
     Node *args;
 
     // ND_VAR用
-    Var *lvar;
+    Var *var;
 };
 
 typedef struct Function Function;

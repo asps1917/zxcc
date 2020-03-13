@@ -250,7 +250,7 @@ static Node *declaration() {
     Node *node_expr = expr();
     expect(";");
     Node *node_var = alloc_node(ND_VAR);
-    node_var->lvar = lvar;
+    node_var->var = lvar;
     return new_node(ND_ASSIGN, node_var, node_expr);
 }
 
@@ -529,7 +529,7 @@ static Node *primary() {
         Var *lvar = find_var(var_name);
         if(lvar) {
             // 定義済みのローカル変数への参照
-            node->lvar = lvar;
+            node->var = lvar;
             return node;
         } else {
             // 未定義のローカル変数
@@ -545,7 +545,7 @@ static Node *primary() {
         Var *gvar = new_gvar(new_label(), array_of(char_type, tok->cont_len));
         gvar->contents = tok->contents;
         gvar->cont_len = tok->cont_len;
-        node->lvar = gvar;
+        node->var = gvar;
         return node;
     }
 

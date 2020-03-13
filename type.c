@@ -61,7 +61,7 @@ void add_type(Node *node) {
             node->type = node->lhs->type;
             return;
         case ND_VAR:
-            node->type = node->lvar->type;
+            node->type = node->var->type;
             return;
         case ND_ADDR:
             if(node->lhs->type->ty == ARRAY) {

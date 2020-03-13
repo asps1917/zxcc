@@ -59,6 +59,17 @@ Token *consume_ident() {
     return NULL;
 }
 
+// 次のトークンが文字列の場合、トークンを1つ読み進めてそのトークンを返す。
+// それ以外の場合にはNULLを返す。
+Token *consume_str() {
+    if(token->kind == TK_STR) {
+        Token *retval = token;
+        token = token->next;
+        return retval;
+    }
+    return NULL;
+}
+
 // 次のトークンがreturnの場合、トークンを1つ読み進めてそのトークンを返す。
 // それ以外の場合にはNULLを返す。
 Token *consume_return() {
@@ -174,6 +185,21 @@ Token *tokenize() {
         // 1文字の演算子
         if(strchr("+-*/(){}[]<>;=,&", *p)) {
             cur = new_token(TK_RESERVED, cur, p++, 1);
+            continue;
+        }
+
+        // 文字列リテラル
+        if(*p == '"') {
+            p++;
+            char *q = p;
+            while(*p != '"') {
+                p++;
+            }
+            cur = new_token(TK_STR, cur, q, (p - q));
+            // strndupはヌル終端文字を追加した文字列を返す
+            cur->contents = strndup(q, (p - q));
+            cur->cont_len = p - q + 1;
+            p++;
             continue;
         }
 

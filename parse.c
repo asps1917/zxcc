@@ -77,6 +77,14 @@ static Node *new_node_num(int val) {
     return node;
 }
 
+// 文字列リテラル用のラベルを生成する
+static char *new_label(void) {
+    static int cnt = 0;
+    char buf[20];
+    sprintf(buf, ".L.data.%d", cnt++);
+    return strndup(buf, 20);
+}
+
 static Type *basetype();
 static Function *function();
 static void global_var();
@@ -482,6 +490,7 @@ static Node *func_args() {
 }
 
 // primary = num
+//         | str
 //         | ident func_args?
 //         | "(" expr ")"
 //         | "sizeof" unary
@@ -526,6 +535,18 @@ static Node *primary() {
             // 未定義のローカル変数
             error("未定義のローカル変数%sを参照しています", var_name);
         }
+    }
+
+    // 文字列トークン
+    tok = consume_str();
+    if(tok) {
+        // 文字列リテラルをグローバル変数に追加する
+        Node *node = alloc_node(ND_VAR);
+        Var *gvar = new_gvar(new_label(), array_of(char_type, tok->cont_len));
+        gvar->contents = tok->contents;
+        gvar->cont_len = tok->cont_len;
+        node->lvar = gvar;
+        return node;
     }
 
     // そうでなければ数値のはず

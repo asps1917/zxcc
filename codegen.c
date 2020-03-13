@@ -21,7 +21,7 @@ static void gen_lval(Node *node) {
                 printf("  sub rax, %d\n", node->lvar->offset);
                 printf("  push rax\n");
             } else {
-                // グローバル変数
+                // グローバル変数 or 文字列リテラル
                 printf("  push offset %s\n", node->lvar->name);
             }
             break;
@@ -313,11 +313,19 @@ static void funcgen(Function *func) {
 static void gen_data_seg(Program *prog) {
     printf(".data\n");
 
-    // グローバル変数を出力
     for(VarList *vlist = prog->globals; vlist; vlist = vlist->next) {
         Var *gvar = vlist->var;
         printf("%s:\n", gvar->name);
-        printf("  .zero %d\n", gvar->type->size);
+
+        if(gvar->contents) {
+            // 文字列リテラル
+            for(int i = 0; i < gvar->cont_len; i++) {
+                printf("  .byte %d\n", gvar->contents[i]);
+            }
+        } else {
+            // グローバル変数
+            printf("  .zero %d\n", gvar->type->size);
+        }
     }
 }
 

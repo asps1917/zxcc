@@ -20,6 +20,7 @@ typedef enum {
     TK_NUM,       // 整数トークン
     TK_EOF,       // 入力の終わりを表すトークン
     TK_RETURN,    // return
+    TK_STR,       // 文字列リテラル
 } TokenKind;
 
 typedef struct Token Token;
@@ -31,6 +32,9 @@ struct Token {
     int val;         // kindがTK_NUMの場合、その数値
     char *str;       // トークン文字列
     int len;         // トークンの長さ
+
+    char *contents;  // 文字列リテラル(終端文字を含む)
+    char cont_len;   // 文字列リテラルの長さ
 };
 
 extern Token *token;
@@ -42,6 +46,7 @@ Token *tokenize();
 bool consume(char *op);
 bool match(char *op);
 Token *consume_ident();
+Token *consume_str();
 Token *consume_return();
 void expect(char *op);
 int expect_number();
@@ -83,9 +88,15 @@ typedef enum {
 typedef struct Var Var;
 struct Var {
     char *name;     // 変数の名前
-    int offset;     // RBPからのオフセット
     Type *type;     // 変数の型
     bool is_local;  // ローカル変数か
+
+    // ローカル変数
+    int offset;  // RBPからのオフセット
+
+    // グローバル変数
+    char *contents;
+    int cont_len;
 };
 
 typedef struct VarList VarList;

@@ -185,4 +185,8 @@ try 106 'int main() { return "\j"[0]; }'
 try 107 'int main() { return "\k"[0]; }'
 try 108 'int main() { return "\l"[0]; }'
 
+try 2 'int main() { int x=2; { int x=3; } return x; }'
+try 2 'int main() { int x=2; { int x=3; } { int y=4; return x; }}'
+try 3 'int main() { int x=2; { x=3; } return x; }'
+
 echo OK

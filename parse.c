@@ -3,19 +3,13 @@
 // パース処理中に現れたローカル変数を追加するための連結リスト
 static VarList *locals;
 static VarList *globals;
+static VarList *scope;
 
 // 変数を名前で検索する。検索対象はローカル変数リスト→グローバル変数リストの順番。
 // 見つからなかった場合はNULLを返す。
 static Var *find_var(char *var_name) {
     int var_len = strlen(var_name);
-    for(VarList *vlist = locals; vlist; vlist = vlist->next) {
-        Var *var = vlist->var;
-        if(strlen(var->name) == var_len &&
-           !strncmp(var_name, var->name, var_len)) {
-            return var;
-        }
-    }
-    for(VarList *vlist = globals; vlist; vlist = vlist->next) {
+    for(VarList *vlist = scope; vlist; vlist = vlist->next) {
         Var *var = vlist->var;
         if(strlen(var->name) == var_len &&
            !strncmp(var_name, var->name, var_len)) {
@@ -31,6 +25,11 @@ static Var *new_var(char *name, Type *type, bool is_local) {
     var->name = name;
     var->type = type;
     var->is_local = is_local;
+
+    VarList *sc = calloc(1, sizeof(VarList));
+    sc->var = var;
+    sc->next = scope;
+    scope = sc;
     return var;
 }
 
@@ -180,6 +179,8 @@ static Function *function() {
     Function *func = calloc(1, sizeof(Function));
     func->name = expect_ident();
     expect("(");
+
+    VarList *sc = scope;
     if(!consume(")")) {
         func->args = params();
         expect(")");
@@ -194,6 +195,7 @@ static Function *function() {
         cur->next = stmt();
         cur = cur->next;
     }
+    scope = sc;
 
     func->node = head.next;
     func->locals = locals;
@@ -214,10 +216,6 @@ static void global_var() {
     expect(";");
 
     // global変数に定義した変数を追加
-    Var *lvar = find_var(var_name);
-    if(lvar) {
-        error("変数%sは重複して定義されています", lvar->name);
-    }
     new_gvar(strndup(var_name, strlen(var_name)), type);
 }
 
@@ -233,12 +231,8 @@ static Node *declaration() {
         expect("]");
     }
 
-    Var *lvar = find_var(var_name);
-    if(lvar && lvar->is_local) {
-        error("変数%sは重複して定義されています", lvar->name);
-    }
     // localsに定義した変数を追加
-    lvar = new_lvar(strndup(var_name, strlen(var_name)), type);
+    Var *lvar = new_lvar(strndup(var_name, strlen(var_name)), type);
 
     if(consume(";")) {
         // 関数宣言のみ
@@ -282,11 +276,13 @@ static Node *stmt2() {
         Node head = {};
         Node *cur = &head;
 
+        VarList *sc = scope;
         // stmtを任意個数分parseする
         while(!consume("}")) {
             cur->next = stmt();
             cur = cur->next;
         }
+        scope = sc;
 
         Node *node = alloc_node(ND_BLOCK);
         node->block = head.next;

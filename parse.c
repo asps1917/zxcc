@@ -63,7 +63,7 @@ static Node *alloc_node(NodeKind kind) {
     return node;
 }
 
-static Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+static Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
     Node *node = alloc_node(kind);
     node->lhs = lhs;
     node->rhs = rhs;
@@ -291,12 +291,12 @@ static Node *declaration() {
     expect(";");
     Node *node_var = alloc_node(ND_VAR);
     node_var->var = lvar;
-    Node *node_assign = new_node(ND_ASSIGN, node_var, node_expr);
-    return new_node(ND_EXPR_STMT, node_assign, NULL);
+    Node *node_assign = new_binary(ND_ASSIGN, node_var, node_expr);
+    return new_binary(ND_EXPR_STMT, node_assign, NULL);
 }
 
 static Node *read_expr_stmt(void) {
-    return new_node(ND_EXPR_STMT, expr(), NULL);
+    return new_binary(ND_EXPR_STMT, expr(), NULL);
 }
 
 // 次のトークンが型の場合trueを返す
@@ -405,7 +405,7 @@ static Node *expr() { return assign(); }
 // assign = equality ("=" assign)?
 static Node *assign() {
     Node *node = equality();
-    if(consume("=")) node = new_node(ND_ASSIGN, node, assign());
+    if(consume("=")) node = new_binary(ND_ASSIGN, node, assign());
     return node;
 }
 
@@ -415,9 +415,9 @@ static Node *equality() {
 
     for(;;) {
         if(consume("=="))
-            node = new_node(ND_EQ, node, relational());
+            node = new_binary(ND_EQ, node, relational());
         else if(consume("!="))
-            node = new_node(ND_NE, node, relational());
+            node = new_binary(ND_NE, node, relational());
         else
             return node;
     }
@@ -429,13 +429,13 @@ static Node *relational() {
 
     for(;;) {
         if(consume("<"))
-            node = new_node(ND_LT, node, add());
+            node = new_binary(ND_LT, node, add());
         else if(consume("<="))
-            node = new_node(ND_LE, node, add());
+            node = new_binary(ND_LE, node, add());
         else if(consume(">"))
-            node = new_node(ND_LT, add(), node);
+            node = new_binary(ND_LT, add(), node);
         else if(consume(">="))
-            node = new_node(ND_LE, add(), node);
+            node = new_binary(ND_LE, add(), node);
         else
             return node;
     }
@@ -447,13 +447,13 @@ static Node *new_add(Node *lhs, Node *rhs) {
     add_type(rhs);
 
     if(is_integer(lhs->type) && is_integer(rhs->type)) {
-        return new_node(ND_ADD, lhs, rhs);
+        return new_binary(ND_ADD, lhs, rhs);
     }
     if(lhs->type->ptr_to && is_integer(rhs->type)) {
-        return new_node(ND_PTR_ADD, lhs, rhs);
+        return new_binary(ND_PTR_ADD, lhs, rhs);
     }
     if(is_integer(lhs->type) && rhs->type->ptr_to) {
-        return new_node(ND_PTR_ADD, rhs, lhs);
+        return new_binary(ND_PTR_ADD, rhs, lhs);
     }
     error("無効な演算です");
 }
@@ -464,13 +464,13 @@ static Node *new_sub(Node *lhs, Node *rhs) {
     add_type(rhs);
 
     if(is_integer(lhs->type) && is_integer(rhs->type)) {
-        return new_node(ND_SUB, lhs, rhs);
+        return new_binary(ND_SUB, lhs, rhs);
     }
     if(lhs->type->ptr_to && is_integer(rhs->type)) {
-        return new_node(ND_PTR_SUB, lhs, rhs);
+        return new_binary(ND_PTR_SUB, lhs, rhs);
     }
     if(lhs->type->ptr_to && rhs->type->ptr_to) {
-        return new_node(ND_PTR_DIFF, lhs, rhs);
+        return new_binary(ND_PTR_DIFF, lhs, rhs);
     }
     error("無効な演算です");
 }
@@ -495,9 +495,9 @@ static Node *mul() {
 
     for(;;) {
         if(consume("*"))
-            node = new_node(ND_MUL, node, unary());
+            node = new_binary(ND_MUL, node, unary());
         else if(consume("/"))
-            node = new_node(ND_DIV, node, unary());
+            node = new_binary(ND_DIV, node, unary());
         else
             return node;
     }
@@ -507,9 +507,9 @@ static Node *mul() {
 //       | postfix
 static Node *unary() {
     if(consume("+")) return unary();
-    if(consume("-")) return new_node(ND_SUB, new_node_num(0), unary());
-    if(consume("*")) return new_node(ND_DEREF, unary(), NULL);
-    if(consume("&")) return new_node(ND_ADDR, unary(), NULL);
+    if(consume("-")) return new_binary(ND_SUB, new_node_num(0), unary());
+    if(consume("*")) return new_binary(ND_DEREF, unary(), NULL);
+    if(consume("&")) return new_binary(ND_ADDR, unary(), NULL);
     return postfix();
 }
 
@@ -533,7 +533,7 @@ static Node *struct_ref(Node *lhs) {
         error("構造体が見つかりません");
     }
 
-    Node *node = new_node(ND_MEMBER, lhs, NULL);
+    Node *node = new_binary(ND_MEMBER, lhs, NULL);
     node->member = mem;
     return node;
 }
@@ -547,7 +547,7 @@ static Node *postfix() {
             // x[y]を*(x+y)として読み換える
             Node *node_expr = expr();
             expect("]");
-            node = new_node(ND_DEREF, new_add(node, node_expr), NULL);
+            node = new_binary(ND_DEREF, new_add(node, node_expr), NULL);
             continue;
         }
 

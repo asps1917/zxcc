@@ -8,7 +8,9 @@ zxcc: $(OBJS)
 $(OBJS): zxcc.h
 
 test: zxcc
-		./test.sh
+		./zxcc tests > tmp.s
+		gcc -static -o tmp tmp.s
+		./tmp
 
 clean:
 		rm -f zxcc *.o *~ tmp*

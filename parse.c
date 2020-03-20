@@ -148,6 +148,17 @@ static Type *basetype() {
     return cur;
 }
 
+// 変数宣言の型名のsuffix([])を読み取る
+static Type *read_type_suffix(Type *base) {
+    if(!consume("[")) {
+        return base;
+    }
+    int sz = expect_number();
+    expect("]");
+    base = read_type_suffix(base);
+    return array_of(base, sz);
+}
+
 // params   = basetype ident ("," basetype ident)*
 static VarList *params() {
     VarList *head = calloc(1, sizeof(VarList));
@@ -157,6 +168,7 @@ static VarList *params() {
     while(1) {
         Type *type = basetype();
         char *var_name = expect_ident();
+        type = read_type_suffix(type);
         // identを以下のVarListに追加
         // * 関数定義内の引数リスト
         // * locals(ローカル変数リスト)
@@ -202,35 +214,22 @@ static Function *function() {
     return func;
 }
 
-// global_var = basetype ident ("[" num "]")? ";"
+// global_var = basetype ident ("[" num "]")* ";"
 static void global_var() {
     Type *type = basetype();
     char *var_name = expect_ident();
-
-    if(consume("[")) {
-        // 配列の定義
-        Type *type_array = array_of(type, expect_number());
-        type = type_array;
-        expect("]");
-    }
+    type = read_type_suffix(type);
     expect(";");
 
     // global変数に定義した変数を追加
     new_gvar(strndup(var_name, strlen(var_name)), type);
 }
 
-// declaration = basetype ident ("[" num "]")? ("=" expr)? ";"
+// declaration = basetype ident ("[" num "]")* ("=" expr)? ";"
 static Node *declaration() {
     Type *type = basetype();
     char *var_name = expect_ident();
-
-    if(consume("[")) {
-        // 配列の定義
-        Type *type_array = array_of(type, expect_number());
-        type = type_array;
-        expect("]");
-    }
-
+    type = read_type_suffix(type);
     // localsに定義した変数を追加
     Var *lvar = new_lvar(strndup(var_name, strlen(var_name)), type);
 
@@ -462,10 +461,10 @@ static Node *unary() {
     return postfix();
 }
 
-// postfix = primary ("[" expr "]")?
+// postfix = primary ("[" expr "]")*
 static Node *postfix() {
     Node *node = primary();
-    if(consume("[")) {
+    while(consume("[")) {
         // x[y]を*(x+y)として読み換える
         Node *node_expr = expr();
         expect("]");

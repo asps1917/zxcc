@@ -761,7 +761,7 @@ int main() {
                sizeof(x);
            }),
            "struct {char a; char b;} x; sizeof(x);");
-    assert(9, ({
+    assert(16, ({
                struct {
                    char a;
                    int b;
@@ -769,6 +769,14 @@ int main() {
                sizeof(x);
            }),
            "struct {char a; int b;} x; sizeof(x);");
+    assert(16, ({
+               struct {
+                   int a;
+                   char b;
+               } x;
+               sizeof(x);
+           }),
+           "struct {int a; char b;} x; sizeof(x);");
 
     printf("OK\n");
     return 0;

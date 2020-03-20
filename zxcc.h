@@ -177,7 +177,8 @@ typedef enum {
 // 型を表す型
 struct Type {
     TypeKind ty;
-    int size;  // sizeofの返り値
+    int size;   // sizeofの返り値
+    int align;  // アライメント
     struct Type *ptr_to;
     int array_len;    // 配列の要素数
     Member *members;  // 構造体
@@ -198,6 +199,7 @@ Type *pointer_to(Type *base);
 Type *array_of(Type *base, int len);
 bool is_integer(Type *type);
 void add_type(Node *node);
+int align_to(int n, int align);
 
 //
 // codegen.c

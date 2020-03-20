@@ -1,24 +1,31 @@
 #include "zxcc.h"
 
-Type *int_type = &(Type){INT, 8};
-Type *char_type = &(Type){CHAR, 1};
+Type *int_type = &(Type){INT, 8, 8};
+Type *char_type = &(Type){CHAR, 1, 1};
 
 bool is_integer(Type *type) { return (type->ty == INT || type->ty == CHAR); }
 
+// nをalignでアライメントする
+int align_to(int n, int align) { return (n + align - 1) & ~(align - 1); }
+
+static Type *new_type(TypeKind kind, int size, int align) {
+    Type *ty = calloc(1, sizeof(Type));
+    ty->ty = kind;
+    ty->size = size;
+    ty->align = align;
+    return ty;
+}
+
 // 引数baseに対するポインタ型を返す。
 Type *pointer_to(Type *base) {
-    Type *ty = calloc(1, sizeof(Type));
-    ty->ty = PTR;
+    Type *ty = new_type(PTR, 8, 8);
     ty->ptr_to = base;
-    ty->size = 8;
     return ty;
 }
 
 // 引数baseに対する配列型を返す。
 Type *array_of(Type *base, int len) {
-    Type *ty = calloc(1, sizeof(Type));
-    ty->ty = ARRAY;
-    ty->size = base->size * len;
+    Type *ty = new_type(ARRAY, base->size * len, base->align);
     ty->ptr_to = base;
     ty->array_len = len;
     return ty;

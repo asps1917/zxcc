@@ -1,7 +1,5 @@
 #include "zxcc.h"
 
-static int align_to(int n, int align) { return (n + align - 1) & ~(align - 1); }
-
 // 指定されたファイルの内容を返す
 static char *read_file(char *path) {
     // ファイルを開く

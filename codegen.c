@@ -68,6 +68,11 @@ static void gen(Node *node) {
             debug_printf("gen - ND_NUM");
             printf("  push %d\n", node->val);
             return;
+        case ND_EXPR_STMT:
+            debug_printf("gen - ND_EXPR_STMT");
+            gen(node->lhs);
+            printf("  add rsp, 8\n");
+            return;
         case ND_VAR:
             debug_printf("gen - ND_VAR");
             gen_lval(node);

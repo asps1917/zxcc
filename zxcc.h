@@ -61,29 +61,30 @@ bool at_eof();
 
 // 抽象構文木のノードの種類
 typedef enum {
-    ND_ADD,       // num + num
-    ND_PTR_ADD,   // ptr + num or num + ptr
-    ND_SUB,       // num - num
-    ND_PTR_SUB,   // ptr - num or num - ptr
-    ND_PTR_DIFF,  // ptr - ptr
-    ND_MUL,       // *
-    ND_DIV,       // /
-    ND_EQ,        // ==
-    ND_NE,        // !=
-    ND_LT,        // <
-    ND_LE,        // <=
-    ND_ASSIGN,    // =
-    ND_VAR,       // ローカル変数
-    ND_NUM,       // 整数
-    ND_RETURN,    // return
-    ND_IF,        // if
-    ND_WHILE,     // while
-    ND_FOR,       // for
-    ND_BLOCK,     // ブロック
-    ND_FUNCCALL,  // 関数呼び出し
-    ND_ADDR,      // 単項 &
-    ND_DEREF,     // 単項 *
-    ND_NULL,      // null
+    ND_ADD,        // num + num
+    ND_PTR_ADD,    // ptr + num or num + ptr
+    ND_SUB,        // num - num
+    ND_PTR_SUB,    // ptr - num or num - ptr
+    ND_PTR_DIFF,   // ptr - ptr
+    ND_MUL,        // *
+    ND_DIV,        // /
+    ND_EQ,         // ==
+    ND_NE,         // !=
+    ND_LT,         // <
+    ND_LE,         // <=
+    ND_ASSIGN,     // =
+    ND_VAR,        // ローカル変数
+    ND_NUM,        // 整数
+    ND_RETURN,     // return
+    ND_EXPR_STMT,  // Expression statement
+    ND_IF,         // if
+    ND_WHILE,      // while
+    ND_FOR,        // for
+    ND_BLOCK,      // ブロック
+    ND_FUNCCALL,   // 関数呼び出し
+    ND_ADDR,       // 単項 &
+    ND_DEREF,      // 単項 *
+    ND_NULL,       // null
 } NodeKind;
 
 // 変数の型

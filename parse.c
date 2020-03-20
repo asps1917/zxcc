@@ -245,7 +245,12 @@ static Node *declaration() {
     expect(";");
     Node *node_var = alloc_node(ND_VAR);
     node_var->var = lvar;
-    return new_node(ND_ASSIGN, node_var, node_expr);
+    Node *node_assign = new_node(ND_ASSIGN, node_var, node_expr);
+    return new_node(ND_EXPR_STMT, node_assign, NULL);
+}
+
+static Node *read_expr_stmt(void) {
+    return new_node(ND_EXPR_STMT, expr(), NULL);
 }
 
 static Node *stmt() {
@@ -316,7 +321,7 @@ static Node *stmt2() {
         expect("(");
         if(!consume(";")) {
             // 初期化式が存在する
-            node->init = expr();
+            node->init = read_expr_stmt();
             expect(";");
         }
         if(!consume(";")) {
@@ -326,7 +331,7 @@ static Node *stmt2() {
         }
         if(!consume(")")) {
             // ループ一周終了時の実行処理が存在する
-            node->post = expr();
+            node->post = read_expr_stmt();
             expect(")");
         }
         node->then = stmt();
@@ -338,7 +343,7 @@ static Node *stmt2() {
         return declaration();
     }
 
-    node = expr();
+    node = read_expr_stmt();
     expect(";");
     return node;
 }

@@ -28,6 +28,12 @@ static void gen_lval(Node *node) {
         case ND_DEREF:
             gen(node->lhs);
             break;
+        case ND_MEMBER:
+            gen_lval(node->lhs);
+            printf("  pop rax\n");
+            printf("  add rax, %d\n", node->member->offset);
+            printf("  push rax\n");
+            break;
         default:
             error("引数が左辺値として評価不可能なノードです");
     }
@@ -74,6 +80,7 @@ static void gen(Node *node) {
             printf("  add rsp, 8\n");
             return;
         case ND_VAR:
+        case ND_MEMBER:
             debug_printf("gen - ND_VAR");
             gen_lval(node);
             if(node->type->ty != ARRAY) {

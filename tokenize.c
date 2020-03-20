@@ -152,8 +152,8 @@ static bool is_alnum(char c) { return is_alpha(c) || ('0' <= c && c <= '9'); }
 // 文字列が予約語か判定する。
 // 予約語だった場合その予約語を返す。そうでない場合、NULLを返す。
 static char *is_reserved(char *p) {
-    static char *keywords[] = {"if",  "else", "while", "for",
-                               "int", "char", "sizeof"};
+    static char *keywords[] = {"if",  "else", "while",  "for",
+                               "int", "char", "sizeof", "struct"};
 
     for(int i = 0; i < sizeof(keywords) / sizeof(*keywords); i++) {
         int len_keyword = strlen(keywords[i]);
@@ -272,7 +272,7 @@ Token *tokenize() {
         }
 
         // 1文字の演算子
-        if(strchr("+-*/(){}[]<>;=,&", *p)) {
+        if(strchr("+-*/(){}[]<>;=,.&", *p)) {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
         }

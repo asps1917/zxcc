@@ -63,6 +63,9 @@ void add_type(Node *node) {
         case ND_VAR:
             node->type = node->var->type;
             return;
+        case ND_MEMBER:
+            node->type = node->member->ty;
+            return;
         case ND_ADDR:
             if(node->lhs->type->ty == ARRAY) {
                 node->type = pointer_to(node->lhs->type->ptr_to);

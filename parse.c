@@ -85,7 +85,10 @@ static char *new_label(void) {
 }
 
 static Type *basetype();
+static bool is_typename();
 static Function *function();
+static Type *struct_decl();
+static Member *struct_member();
 static void global_var();
 static Node *declaration();
 static Node *stmt();
@@ -130,16 +133,21 @@ Program *program() {
     return prog;
 }
 
-// basetype = ("int" | "char") "*"*
+// basetype = ("int" | "char" | struct-decl) "*"*
 // パースした型を表すType構造体へのポインタを返す
 static Type *basetype() {
+    if(!is_typename()) {
+        error("型名ではありません");
+    }
+
     Type *cur;
     if(consume("int")) {
         cur = int_type;
     } else if(consume("char")) {
         cur = char_type;
     } else {
-        error("不正な型です");
+        // 構造体
+        cur = struct_decl();
     }
 
     while(consume("*")) {
@@ -157,6 +165,45 @@ static Type *read_type_suffix(Type *base) {
     expect("]");
     base = read_type_suffix(base);
     return array_of(base, sz);
+}
+
+// struct-decl = "struct" "{" struct-member "}"
+static Type *struct_decl(void) {
+    // Read struct members.
+    expect("struct");
+    expect("{");
+
+    Member head = {};
+    Member *cur = &head;
+
+    while(!consume("}")) {
+        cur->next = struct_member();
+        cur = cur->next;
+    }
+
+    Type *ty = calloc(1, sizeof(Type));
+    ty->ty = STRUCT;
+    ty->members = head.next;
+
+    // Assign offsets within the struct to members.
+    int offset = 0;
+    for(Member *mem = ty->members; mem; mem = mem->next) {
+        mem->offset = offset;
+        offset += mem->ty->size;
+    }
+    ty->size = offset;
+
+    return ty;
+}
+
+// struct-member = basetype ident ("[" num "]")* ";"
+static Member *struct_member(void) {
+    Member *mem = calloc(1, sizeof(Member));
+    mem->ty = basetype();
+    mem->name = expect_ident();
+    mem->ty = read_type_suffix(mem->ty);
+    expect(";");
+    return mem;
 }
 
 // params   = basetype ident ("," basetype ident)*
@@ -252,6 +299,11 @@ static Node *read_expr_stmt(void) {
     return new_node(ND_EXPR_STMT, expr(), NULL);
 }
 
+// 次のトークンが型の場合trueを返す
+static bool is_typename(void) {
+    return match("char") || match("int") || match("struct");
+}
+
 static Node *stmt() {
     Node *node = stmt2();
     // stmt2によって生成されたノードツリーの各ノードに型を設定する
@@ -338,7 +390,7 @@ static Node *stmt2() {
     }
 
     // 変数定義
-    if(match("int") || match("char")) {
+    if(is_typename()) {
         return declaration();
     }
 
@@ -461,16 +513,50 @@ static Node *unary() {
     return postfix();
 }
 
-// postfix = primary ("[" expr "]")*
+static Member *find_member(Type *ty, char *name) {
+    for(Member *mem = ty->members; mem; mem = mem->next) {
+        if(!strcmp(mem->name, name)) {
+            return mem;
+        }
+    }
+    return NULL;
+}
+
+static Node *struct_ref(Node *lhs) {
+    add_type(lhs);
+    if(lhs->type->ty != STRUCT) {
+        error("構造体ではありません");
+    }
+
+    Member *mem = find_member(lhs->type, expect_ident());
+    if(!mem) {
+        error("構造体が見つかりません");
+    }
+
+    Node *node = new_node(ND_MEMBER, lhs, NULL);
+    node->member = mem;
+    return node;
+}
+
+// postfix = primary ("[" expr "]" | "." ident)*
 static Node *postfix() {
     Node *node = primary();
-    while(consume("[")) {
-        // x[y]を*(x+y)として読み換える
-        Node *node_expr = expr();
-        expect("]");
-        node = new_node(ND_DEREF, new_add(node, node_expr), NULL);
+
+    for(;;) {
+        if(consume("[")) {
+            // x[y]を*(x+y)として読み換える
+            Node *node_expr = expr();
+            expect("]");
+            node = new_node(ND_DEREF, new_add(node, node_expr), NULL);
+            continue;
+        }
+
+        if(consume(".")) {
+            node = struct_ref(node);
+            continue;
+        }
+        return node;
     }
-    return node;
 }
 
 // func_args = "(" (assign ("," assign)*)? ")"

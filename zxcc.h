@@ -9,6 +9,7 @@
 #include <string.h>
 
 typedef struct Type Type;
+typedef struct Member Member;
 
 //
 // tokenize.c
@@ -73,6 +74,7 @@ typedef enum {
     ND_LT,         // <
     ND_LE,         // <=
     ND_ASSIGN,     // =
+    ND_MEMBER,     // . (構造体のメンバアクセス)
     ND_VAR,        // ローカル変数
     ND_NUM,        // 整数
     ND_RETURN,     // return
@@ -130,6 +132,9 @@ struct Node {
     // ブロック
     Node *block;
 
+    // 構造体のメンバアクセス
+    Member *member;
+
     // 関数呼び出し
     char *func_name;
     Node *args;
@@ -162,10 +167,11 @@ Program *program();
 //
 
 typedef enum {
-    INT,    // 整数
-    PTR,    // ポインタ
-    ARRAY,  // 配列
-    CHAR,   // 文字
+    INT,     // 整数
+    PTR,     // ポインタ
+    ARRAY,   // 配列
+    CHAR,    // 文字
+    STRUCT,  // 構造体
 } TypeKind;
 
 // 型を表す型
@@ -173,7 +179,16 @@ struct Type {
     TypeKind ty;
     int size;  // sizeofの返り値
     struct Type *ptr_to;
-    int array_len;  // 配列の要素数
+    int array_len;    // 配列の要素数
+    Member *members;  // 構造体
+};
+
+// 構造体のメンバ
+struct Member {
+    Member *next;
+    Type *ty;
+    char *name;
+    int offset;
 };
 
 Type *char_type;

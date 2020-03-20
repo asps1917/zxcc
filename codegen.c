@@ -167,11 +167,12 @@ static void gen(Node *node) {
             debug_printf("gen - ND_FOR end");
             return;
         case ND_BLOCK:
-            debug_printf("gen - ND_BLOCK");
+        case ND_STMT_EXPR:
+            debug_printf("gen - ND_BLOCK, ND_STMT_EXPR");
             for(Node *cur = node->block; cur; cur = cur->next) {
                 gen(cur);
             }
-            debug_printf("gen - ND_BLOCK end");
+            debug_printf("gen - ND_BLOCK, ND_STMT_EXPR end");
             return;
         case ND_FUNCCALL:
             debug_printf("gen - ND_FUNCCALL");

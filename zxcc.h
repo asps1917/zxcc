@@ -85,6 +85,7 @@ typedef enum {
     ND_ADDR,       // 単項 &
     ND_DEREF,      // 単項 *
     ND_NULL,       // null
+    ND_STMT_EXPR,  // Statement expression
 } NodeKind;
 
 // 変数の型

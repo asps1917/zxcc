@@ -76,5 +76,13 @@ void add_type(Node *node) {
             }
             node->type = node->lhs->type->ptr_to;
             return;
+        case ND_STMT_EXPR: {
+            Node *last = node->block;
+            while(last->next) {
+                last = last->next;
+            }
+            node->type = last->type;
+            return;
+        }
     }
 }

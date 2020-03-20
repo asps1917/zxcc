@@ -490,14 +490,41 @@ static Node *func_args() {
     return head;
 }
 
+// stmt-expr = "(" "{" stmt stmt* "}" ")"
+//
+// statement expressionはGNUの拡張機能。
+// 括弧で囲んだ複数のstatementを1つの式として取り扱う。
+static Node *stmt_expr() {
+    Node *node = alloc_node(ND_STMT_EXPR);
+    node->block = stmt();
+    Node *cur = node->block;
+
+    while(!consume("}")) {
+        cur->next = stmt();
+        cur = cur->next;
+    }
+    expect(")");
+
+    if(cur->kind != ND_EXPR_STMT) {
+        error("voidを返すstatement expressionは非サポートです");
+    }
+    memcpy(cur, cur->lhs, sizeof(Node));
+    return node;
+}
+
 // primary = num
 //         | str
 //         | ident func_args?
 //         | "(" expr ")"
 //         | "sizeof" unary
+//         | "(" "{" stmt-expr-tail
 static Node *primary() {
     // 次のトークンが"("なら、"(" expr ")"のはず
     if(consume("(")) {
+        if(consume("{")) {
+            return stmt_expr();
+        }
+
         Node *node = expr();
         expect(")");
         return node;

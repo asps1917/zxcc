@@ -70,6 +70,12 @@ static Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
     return node;
 }
 
+static Node *new_unary(NodeKind kind, Node *expr) {
+    Node *node = alloc_node(kind);
+    node->lhs = expr;
+    return node;
+}
+
 static Node *new_node_num(int val) {
     Node *node = alloc_node(ND_NUM);
     node->val = val;
@@ -292,12 +298,10 @@ static Node *declaration() {
     Node *node_var = alloc_node(ND_VAR);
     node_var->var = lvar;
     Node *node_assign = new_binary(ND_ASSIGN, node_var, node_expr);
-    return new_binary(ND_EXPR_STMT, node_assign, NULL);
+    return new_unary(ND_EXPR_STMT, node_assign);
 }
 
-static Node *read_expr_stmt(void) {
-    return new_binary(ND_EXPR_STMT, expr(), NULL);
-}
+static Node *read_expr_stmt(void) { return new_unary(ND_EXPR_STMT, expr()); }
 
 // 次のトークンが型の場合trueを返す
 static bool is_typename(void) {
@@ -508,8 +512,8 @@ static Node *mul() {
 static Node *unary() {
     if(consume("+")) return unary();
     if(consume("-")) return new_binary(ND_SUB, new_node_num(0), unary());
-    if(consume("*")) return new_binary(ND_DEREF, unary(), NULL);
-    if(consume("&")) return new_binary(ND_ADDR, unary(), NULL);
+    if(consume("*")) return new_unary(ND_DEREF, unary());
+    if(consume("&")) return new_unary(ND_ADDR, unary());
     return postfix();
 }
 
@@ -533,7 +537,7 @@ static Node *struct_ref(Node *lhs) {
         error("構造体が見つかりません");
     }
 
-    Node *node = new_binary(ND_MEMBER, lhs, NULL);
+    Node *node = new_unary(ND_MEMBER, lhs);
     node->member = mem;
     return node;
 }
@@ -547,7 +551,7 @@ static Node *postfix() {
             // x[y]を*(x+y)として読み換える
             Node *node_expr = expr();
             expect("]");
-            node = new_binary(ND_DEREF, new_add(node, node_expr), NULL);
+            node = new_unary(ND_DEREF, new_add(node, node_expr));
             continue;
         }
 

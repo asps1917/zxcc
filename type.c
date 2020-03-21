@@ -1,6 +1,6 @@
 #include "zxcc.h"
 
-Type *int_type = &(Type){INT, 8, 8};
+Type *int_type = &(Type){INT, 4, 4};
 Type *char_type = &(Type){CHAR, 1, 1};
 
 bool is_integer(Type *type) { return (type->ty == INT || type->ty == CHAR); }

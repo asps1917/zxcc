@@ -1,5 +1,14 @@
 #include "zxcc.h"
 
+// ローカル・グローバル変数、typedefのスコープ
+typedef struct VarScope VarScope;
+struct VarScope {
+    VarScope *next;
+    char *name;
+    Var *var;
+    Type *type_def;
+};
+
 // 構造体タグのスコープ
 typedef struct TagScope TagScope;
 struct TagScope {
@@ -9,7 +18,7 @@ struct TagScope {
 };
 
 typedef struct {
-    VarList *var_scope;
+    VarScope *var_scope;
     TagScope *tag_scope;
 } Scope;
 
@@ -18,8 +27,8 @@ static VarList *locals;
 // パース処理中に現れたグローバル変数を追加するための連結リスト
 static VarList *globals;
 
-// 変数のスコープ
-VarList *var_scope;
+// 変数、typedefのスコープ
+static VarScope *var_scope;
 // 構造体タグのスコープ
 static TagScope *tag_scope;
 
@@ -37,14 +46,13 @@ static void leave_scope(Scope *sc) {
     tag_scope = sc->tag_scope;
 }
 
-// 変数を名前で検索する。検索対象はローカル変数リスト→グローバル変数リストの順番。
+// 変数、typedefを名前で検索する。検索対象はローカル変数リスト→グローバル変数リストの順番。
 // 見つからなかった場合はNULLを返す。
-static Var *find_var(Token *tok) {
-    for(VarList *vlist = var_scope; vlist; vlist = vlist->next) {
-        Var *var = vlist->var;
-        if(strlen(var->name) == tok->len &&
-           !strncmp(tok->str, var->name, tok->len)) {
-            return var;
+static VarScope *find_var(Token *tok) {
+    for(VarScope *sc = var_scope; sc; sc = sc->next) {
+        if(strlen(sc->name) == tok->len &&
+           !strncmp(tok->str, sc->name, tok->len)) {
+            return sc;
         }
     }
     return NULL;
@@ -61,17 +69,20 @@ static TagScope *find_tag(Token *tok) {
     return NULL;
 }
 
+static VarScope *push_scope(char *name) {
+    VarScope *sc = calloc(1, sizeof(VarScope));
+    sc->name = name;
+    sc->next = var_scope;
+    var_scope = sc;
+    return sc;
+}
+
 // 引数として与えられた変数名のVar構造体を生成する
 static Var *new_var(char *name, Type *type, bool is_local) {
     Var *var = calloc(1, sizeof(Var));
     var->name = name;
     var->type = type;
     var->is_local = is_local;
-
-    VarList *sc = calloc(1, sizeof(VarList));
-    sc->var = var;
-    sc->next = var_scope;
-    var_scope = sc;
     return var;
 }
 
@@ -79,8 +90,9 @@ static Var *new_var(char *name, Type *type, bool is_local) {
 // 生成したVar構造体はlocalsリストに追加される。
 static Var *new_lvar(char *name, Type *type) {
     Var *lvar = new_var(name, type, true);
-    VarList *vl = calloc(1, sizeof(VarList));
+    push_scope(name)->var = lvar;
 
+    VarList *vl = calloc(1, sizeof(VarList));
     vl->var = lvar;
     vl->next = locals;
     locals = vl;
@@ -91,12 +103,23 @@ static Var *new_lvar(char *name, Type *type) {
 // 生成したVar構造体はglobalsリストに追加される。
 static Var *new_gvar(char *name, Type *type) {
     Var *gvar = new_var(name, type, false);
-    VarList *vl = calloc(1, sizeof(VarList));
+    push_scope(name)->var = gvar;
 
+    VarList *vl = calloc(1, sizeof(VarList));
     vl->var = gvar;
     vl->next = globals;
     globals = vl;
     return gvar;
+}
+
+static Type *find_typedef(Token *tok) {
+    if(tok->kind == TK_IDENT) {
+        VarScope *sc = find_var(tok);
+        if(sc) {
+            return sc->type_def;
+        }
+    }
+    return NULL;
 }
 
 static Node *alloc_node(NodeKind kind) {
@@ -181,7 +204,7 @@ Program *program() {
     return prog;
 }
 
-// basetype = ("int" | "char" | struct-decl) "*"*
+// basetype = ("char" | "int" | struct-decl | typedef-name) "*"*
 // パースした型を表すType構造体へのポインタを返す
 static Type *basetype() {
     if(!is_typename()) {
@@ -193,10 +216,12 @@ static Type *basetype() {
         cur = int_type;
     } else if(consume("char")) {
         cur = char_type;
-    } else {
-        // 構造体
+    } else if(consume("struct")) {
         cur = struct_decl();
+    } else {
+        cur = find_var(consume_ident())->type_def;
     }
+    assert(cur);
 
     while(consume("*")) {
         cur = pointer_to(cur);
@@ -226,8 +251,6 @@ static void push_tag_scope(Token *tok, Type *ty) {
 // struct-decl = "struct" ident
 //             | "struct" ident? "{" struct-member "}"
 static Type *struct_decl(void) {
-    expect("struct");
-
     // 構造体タグの読み出し
     Token *tag = consume_ident();
     if(tag && !match("{")) {
@@ -381,7 +404,8 @@ static Node *read_expr_stmt(void) { return new_unary(ND_EXPR_STMT, expr()); }
 
 // 次のトークンが型の場合trueを返す
 static bool is_typename(void) {
-    return match("char") || match("int") || match("struct");
+    return match("char") || match("int") || match("struct") ||
+           find_typedef(token);
 }
 
 static Node *stmt() {
@@ -398,6 +422,7 @@ static Node *stmt() {
 //      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //      | expr ";"
 //      | declaration
+//      | "typedef" basetype ident ("[" num "]")* ";"
 static Node *stmt2() {
     Node *node;
 
@@ -467,6 +492,15 @@ static Node *stmt2() {
         }
         node->then = stmt();
         return node;
+    }
+
+    if(consume("typedef")) {
+        Type *ty = basetype();
+        char *name = expect_ident();
+        ty = read_type_suffix(ty);
+        expect(";");
+        push_scope(name)->type_def = ty;
+        return alloc_node(ND_NULL);
     }
 
     // 変数定義
@@ -727,17 +761,16 @@ static Node *primary() {
         }
 
         // ローカル変数
-        node = alloc_node(ND_VAR);
-        Var *lvar = find_var(tok);
-        if(lvar) {
-            // 定義済みのローカル変数への参照
-            node->var = lvar;
+        VarScope *sc = find_var(tok);
+
+        if(sc && sc->var) {
+            node = alloc_node(ND_VAR);
+            node->var = sc->var;
             return node;
-        } else {
-            // 未定義のローカル変数
-            error("未定義のローカル変数%sを参照しています",
-                  strndup(tok->str, tok->len));
         }
+
+        error("未定義のローカル変数%sを参照しています",
+              strndup(tok->str, tok->len));
     }
 
     // 文字列トークン

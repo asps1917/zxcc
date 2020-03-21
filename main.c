@@ -36,6 +36,7 @@ int main(int argc, char **argv) {
         int offset = 0;
         for(VarList *vl = func->locals; vl; vl = vl->next) {
             Var *lvar = vl->var;
+            offset = align_to(offset, lvar->type->align);
             offset += lvar->type->size;
             lvar->offset = offset;
         }

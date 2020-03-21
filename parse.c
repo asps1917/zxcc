@@ -39,12 +39,11 @@ static void leave_scope(Scope *sc) {
 
 // 変数を名前で検索する。検索対象はローカル変数リスト→グローバル変数リストの順番。
 // 見つからなかった場合はNULLを返す。
-static Var *find_var(char *var_name) {
-    int var_len = strlen(var_name);
+static Var *find_var(Token *tok) {
     for(VarList *vlist = var_scope; vlist; vlist = vlist->next) {
         Var *var = vlist->var;
-        if(strlen(var->name) == var_len &&
-           !strncmp(var_name, var->name, var_len)) {
+        if(strlen(var->name) == tok->len &&
+           !strncmp(tok->str, var->name, tok->len)) {
             return var;
         }
     }
@@ -729,15 +728,15 @@ static Node *primary() {
 
         // ローカル変数
         node = alloc_node(ND_VAR);
-        char *var_name = strndup(tok->str, tok->len);
-        Var *lvar = find_var(var_name);
+        Var *lvar = find_var(tok);
         if(lvar) {
             // 定義済みのローカル変数への参照
             node->var = lvar;
             return node;
         } else {
             // 未定義のローカル変数
-            error("未定義のローカル変数%sを参照しています", var_name);
+            error("未定義のローカル変数%sを参照しています",
+                  strndup(tok->str, tok->len));
         }
     }
 

@@ -619,7 +619,7 @@ static Node *struct_ref(Node *lhs) {
     return node;
 }
 
-// postfix = primary ("[" expr "]" | "." ident)*
+// postfix = primary ("[" expr "]" | "." ident | "->" ident)*
 static Node *postfix() {
     Node *node = primary();
 
@@ -636,6 +636,14 @@ static Node *postfix() {
             node = struct_ref(node);
             continue;
         }
+
+        if(consume("->")) {
+            // x->yを(*x).yとして読み替える
+            node = new_unary(ND_DEREF, node);
+            node = struct_ref(node);
+            continue;
+        }
+
         return node;
     }
 }

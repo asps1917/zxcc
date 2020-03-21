@@ -1,19 +1,62 @@
 #include "zxcc.h"
 
+// 構造体タグのスコープ
+typedef struct TagScope TagScope;
+struct TagScope {
+    TagScope *next;
+    char *name;
+    Type *ty;
+};
+
+typedef struct {
+    VarList *var_scope;
+    TagScope *tag_scope;
+} Scope;
+
 // パース処理中に現れたローカル変数を追加するための連結リスト
 static VarList *locals;
+// パース処理中に現れたグローバル変数を追加するための連結リスト
 static VarList *globals;
-static VarList *scope;
+
+// 変数のスコープ
+VarList *var_scope;
+// 構造体タグのスコープ
+static TagScope *tag_scope;
+
+// ブロックスコープの開始処理
+static Scope *enter_scope(void) {
+    Scope *sc = calloc(1, sizeof(Scope));
+    sc->var_scope = var_scope;
+    sc->tag_scope = tag_scope;
+    return sc;
+}
+
+// ブロックスコープの終了処理
+static void leave_scope(Scope *sc) {
+    var_scope = sc->var_scope;
+    tag_scope = sc->tag_scope;
+}
 
 // 変数を名前で検索する。検索対象はローカル変数リスト→グローバル変数リストの順番。
 // 見つからなかった場合はNULLを返す。
 static Var *find_var(char *var_name) {
     int var_len = strlen(var_name);
-    for(VarList *vlist = scope; vlist; vlist = vlist->next) {
+    for(VarList *vlist = var_scope; vlist; vlist = vlist->next) {
         Var *var = vlist->var;
         if(strlen(var->name) == var_len &&
            !strncmp(var_name, var->name, var_len)) {
             return var;
+        }
+    }
+    return NULL;
+}
+
+// 構造体タグを名前で検索する。見つからなかった場合はNULLを返す。
+static TagScope *find_tag(Token *tok) {
+    for(TagScope *sc = tag_scope; sc; sc = sc->next) {
+        if(strlen(sc->name) == tok->len &&
+           !strncmp(tok->str, sc->name, tok->len)) {
+            return sc;
         }
     }
     return NULL;
@@ -28,8 +71,8 @@ static Var *new_var(char *name, Type *type, bool is_local) {
 
     VarList *sc = calloc(1, sizeof(VarList));
     sc->var = var;
-    sc->next = scope;
-    scope = sc;
+    sc->next = var_scope;
+    var_scope = sc;
     return var;
 }
 
@@ -173,12 +216,32 @@ static Type *read_type_suffix(Type *base) {
     return array_of(base, sz);
 }
 
-// struct-decl = "struct" "{" struct-member "}"
+static void push_tag_scope(Token *tok, Type *ty) {
+    TagScope *sc = calloc(1, sizeof(TagScope));
+    sc->next = tag_scope;
+    sc->name = strndup(tok->str, tok->len);
+    sc->ty = ty;
+    tag_scope = sc;
+}
+
+// struct-decl = "struct" ident
+//             | "struct" ident? "{" struct-member "}"
 static Type *struct_decl(void) {
-    // Read struct members.
     expect("struct");
+
+    // 構造体タグの読み出し
+    Token *tag = consume_ident();
+    if(tag && !match("{")) {
+        TagScope *sc = find_tag(tag);
+        if(!sc) {
+            error("未定義の構造体の型です");
+        }
+        return sc->ty;
+    }
+
     expect("{");
 
+    // 構造体メンバの読み出し
     Member head = {};
     Member *cur = &head;
 
@@ -191,7 +254,7 @@ static Type *struct_decl(void) {
     ty->ty = STRUCT;
     ty->members = head.next;
 
-    // Assign offsets within the struct to members.
+    // 構造体メンバへのoffset割り当て
     int offset = 0;
     for(Member *mem = ty->members; mem; mem = mem->next) {
         offset = align_to(offset, mem->ty->align);
@@ -204,6 +267,10 @@ static Type *struct_decl(void) {
     }
     ty->size = align_to(offset, ty->align);
 
+    // 構造体の型を登録
+    if(tag) {
+        push_tag_scope(tag, ty);
+    }
     return ty;
 }
 
@@ -250,7 +317,7 @@ static Function *function() {
     func->name = expect_ident();
     expect("(");
 
-    VarList *sc = scope;
+    Scope *sc = enter_scope();
     if(!consume(")")) {
         func->args = params();
         expect(")");
@@ -265,7 +332,7 @@ static Function *function() {
         cur->next = stmt();
         cur = cur->next;
     }
-    scope = sc;
+    leave_scope(sc);
 
     func->node = head.next;
     func->locals = locals;
@@ -284,8 +351,13 @@ static void global_var() {
 }
 
 // declaration = basetype ident ("[" num "]")* ("=" expr)? ";"
+//             | basetype ";"
 static Node *declaration() {
     Type *type = basetype();
+    if(consume(";")) {
+        return alloc_node(ND_NULL);
+    }
+
     char *var_name = expect_ident();
     type = read_type_suffix(type);
     // localsに定義した変数を追加
@@ -341,13 +413,13 @@ static Node *stmt2() {
         Node head = {};
         Node *cur = &head;
 
-        VarList *sc = scope;
+        Scope *sc = enter_scope();
         // stmtを任意個数分parseする
         while(!consume("}")) {
             cur->next = stmt();
             cur = cur->next;
         }
-        scope = sc;
+        leave_scope(sc);
 
         Node *node = alloc_node(ND_BLOCK);
         node->block = head.next;
@@ -589,6 +661,7 @@ static Node *func_args() {
 // statement expressionはGNUの拡張機能。
 // 括弧で囲んだ複数のstatementを1つの式として取り扱う。
 static Node *stmt_expr() {
+    Scope *sc = enter_scope();
     Node *node = alloc_node(ND_STMT_EXPR);
     node->block = stmt();
     Node *cur = node->block;
@@ -598,6 +671,7 @@ static Node *stmt_expr() {
         cur = cur->next;
     }
     expect(")");
+    leave_scope(sc);
 
     if(cur->kind != ND_EXPR_STMT) {
         error("voidを返すstatement expressionは非サポートです");

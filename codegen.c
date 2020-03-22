@@ -6,6 +6,7 @@ static char *func_name;
 
 static char *regs_for_args_8[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 static char *regs_for_args_4[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
+static char *regs_for_args_2[] = {"di", "si", "dx", "cx", "r8w", "r9w"};
 static char *regs_for_args_1[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
 
 static void debug_printf(char *fmt, ...);
@@ -47,6 +48,9 @@ static void load(Type *type) {
     if(type->size == 1) {
         // raxが指しているアドレスから1byteロードする(符号拡張あり)
         printf("  movsx rax, byte ptr [rax]\n");
+    } else if(type->size == 2) {
+        // raxが指しているアドレスから2byteロードする(符号拡張あり)
+        printf("  movsx rax, word ptr [rax]\n");
     } else if(type->size == 4) {
         // raxが指しているアドレスから4byteロードする(符号拡張あり)
         printf("  movsxd rax, dword ptr [rax]\n");
@@ -65,6 +69,9 @@ static void store(Type *type) {
     if(type->size == 1) {
         // dilから1byteストアする
         printf("  mov [rax], dil\n");
+    } else if(type->size == 2) {
+        // diから2byteストアする
+        printf("  mov [rax], di\n");
     } else if(type->size == 4) {
         // ediから4byteストアする
         printf("  mov [rax], edi\n");
@@ -300,6 +307,8 @@ static void load_arg(Var *var, int idx) {
     int size = var->type->size;
     if(size == 1) {
         printf("  mov [rbp-%d], %s\n", var->offset, regs_for_args_1[idx]);
+    } else if(size == 2) {
+        printf("  mov [rbp-%d], %s\n", var->offset, regs_for_args_2[idx]);
     } else if(size == 4) {
         printf("  mov [rbp-%d], %s\n", var->offset, regs_for_args_4[idx]);
     } else {

@@ -167,10 +167,12 @@ Program *program();
 //
 
 typedef enum {
-    INT,     // 整数
+    CHAR,
+    SHORT,
+    INT,
+    LONG,
     PTR,     // ポインタ
     ARRAY,   // 配列
-    CHAR,    // 文字
     STRUCT,  // 構造体
 } TypeKind;
 
@@ -193,7 +195,9 @@ struct Member {
 };
 
 Type *char_type;
+Type *short_type;
 Type *int_type;
+Type *long_type;
 
 Type *pointer_to(Type *base);
 Type *array_of(Type *base, int len);

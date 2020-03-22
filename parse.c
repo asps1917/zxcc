@@ -204,18 +204,22 @@ Program *program() {
     return prog;
 }
 
-// basetype = ("char" | "int" | struct-decl | typedef-name) "*"*
-// パースした型を表すType構造体へのポインタを返す
+// basetype = ("char" | "short" | "int" | "long" | struct-decl | typedef-name)
+// "*"* パースした型を表すType構造体へのポインタを返す
 static Type *basetype() {
     if(!is_typename()) {
         error("型名ではありません");
     }
 
     Type *cur;
-    if(consume("int")) {
-        cur = int_type;
-    } else if(consume("char")) {
+    if(consume("char")) {
         cur = char_type;
+    } else if(consume("short")) {
+        cur = short_type;
+    } else if(consume("int")) {
+        cur = int_type;
+    } else if(consume("long")) {
+        cur = long_type;
     } else if(consume("struct")) {
         cur = struct_decl();
     } else {
@@ -404,8 +408,8 @@ static Node *read_expr_stmt(void) { return new_unary(ND_EXPR_STMT, expr()); }
 
 // 次のトークンが型の場合trueを返す
 static bool is_typename(void) {
-    return match("char") || match("int") || match("struct") ||
-           find_typedef(token);
+    return match("char") || match("short") || match("int") || match("long") ||
+           match("struct") || find_typedef(token);
 }
 
 static Node *stmt() {

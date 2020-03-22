@@ -1,6 +1,7 @@
 #include "zxcc.h"
 
 Type *void_type = &(Type){VOID, 1, 1};
+Type *bool_type = &(Type){BOOL, 1, 1};
 Type *char_type = &(Type){CHAR, 1, 1};
 Type *short_type = &(Type){SHORT, 2, 2};
 Type *int_type = &(Type){INT, 4, 4};
@@ -8,7 +9,8 @@ Type *long_type = &(Type){LONG, 8, 8};
 
 bool is_integer(Type *type) {
     TypeKind kind = type->ty;
-    return (kind == CHAR || kind == SHORT || kind == INT || kind == LONG);
+    return (kind == BOOL || kind == CHAR || kind == SHORT || kind == INT ||
+            kind == LONG);
 }
 
 // nをalignでアライメントする

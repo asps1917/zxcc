@@ -169,6 +169,7 @@ Program *program();
 
 typedef enum {
     VOID,
+    BOOL,
     CHAR,
     SHORT,
     INT,
@@ -199,6 +200,7 @@ struct Member {
 };
 
 Type *void_type;
+Type *bool_type;
 Type *char_type;
 Type *short_type;
 Type *int_type;

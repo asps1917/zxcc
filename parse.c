@@ -219,7 +219,7 @@ Program *program() {
 }
 
 // basetype = builtin-type | struct-decl | typedef-name
-// builtin-type   = "void" | "char" | "short" | "int" | "long"
+// builtin-type   = "void" | "_Bool" | "char" | "short" | "int" | "long"
 // パースした型を表すType構造体へのポインタを返す
 static Type *basetype() {
     if(!is_typename()) {
@@ -228,6 +228,9 @@ static Type *basetype() {
 
     if(consume("void")) {
         return void_type;
+    }
+    if(consume("_Bool")) {
+        return bool_type;
     }
     if(consume("char")) {
         return char_type;
@@ -467,8 +470,9 @@ static Node *read_expr_stmt(void) { return new_unary(ND_EXPR_STMT, expr()); }
 
 // 次のトークンが型の場合trueを返す
 static bool is_typename(void) {
-    return match("void") || match("char") || match("short") || match("int") ||
-           match("long") || match("struct") || find_typedef(token);
+    return match("void") || match("_Bool") || match("char") || match("short") ||
+           match("int") || match("long") || match("struct") ||
+           find_typedef(token);
 }
 
 static Node *stmt() {

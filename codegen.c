@@ -66,6 +66,12 @@ static void store(Type *type) {
     printf("  pop rdi\n");
     printf("  pop rax\n");
 
+    if(type->ty == BOOL) {
+        printf("  cmp rdi, 0\n");
+        printf("  setne dil\n");
+        printf("  movzb rdi, dil\n");
+    }
+
     if(type->size == 1) {
         // dilから1byteストアする
         printf("  mov [rax], dil\n");

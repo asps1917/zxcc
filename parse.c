@@ -197,13 +197,18 @@ Program *program() {
 
     while(!at_eof()) {
         if(is_function()) {
-            cur->next = function();
+            Function *func = function();
+            if(!func) {
+                continue;
+            }
+            cur->next = func;
             cur = cur->next;
-        } else {
-            // グローバル変数
-            global_var();
+            continue;
         }
+
+        global_var();
     }
+
     Program *prog = calloc(1, sizeof(Program));
     prog->funcs = head.next;
     prog->globals = globals;
@@ -362,7 +367,7 @@ static VarList *params() {
     }
 }
 
-// function = basetype declarator "(" params? ")" "{" stmt* "}"
+// function = basetype declarator "(" params? ")" ("{" stmt* "}" | ";")
 static Function *function() {
     locals = NULL;
 
@@ -380,11 +385,15 @@ static Function *function() {
         func->args = params();
         expect(")");
     }
-    expect("{");
+
+    if(consume(";")) {
+        leave_scope(sc);
+        return NULL;
+    }
 
     Node head = {};
     Node *cur = &head;
-
+    expect("{");
     // stmt*
     while(!consume("}")) {
         cur->next = stmt();

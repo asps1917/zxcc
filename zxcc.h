@@ -45,6 +45,7 @@ extern char *filename;
 
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
+void warn(Token *tok, char *fmt, ...);
 Token *tokenize();
 bool consume(char *op);
 bool match(char *op);
@@ -174,6 +175,7 @@ typedef enum {
     PTR,     // ポインタ
     ARRAY,   // 配列
     STRUCT,  // 構造体
+    FUNC,    // 関数
 } TypeKind;
 
 // 型を表す型
@@ -184,6 +186,7 @@ struct Type {
     struct Type *ptr_to;
     int array_len;    // 配列の要素数
     Member *members;  // 構造体
+    Type *return_ty;  // 関数の戻り値の型
 };
 
 // 構造体のメンバ
@@ -203,6 +206,7 @@ Type *pointer_to(Type *base);
 Type *array_of(Type *base, int len);
 bool is_integer(Type *type);
 void add_type(Node *node);
+Type *func_type(Type *return_ty);
 int align_to(int n, int align);
 
 //

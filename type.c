@@ -36,6 +36,12 @@ Type *array_of(Type *base, int len) {
     return ty;
 }
 
+Type *func_type(Type *return_ty) {
+    Type *ty = new_type(FUNC, 1, 1);
+    ty->return_ty = return_ty;
+    return ty;
+}
+
 // 引数nodeと子ノードに対して、そのnodeを評価した結果適用される型をセットする。
 // 例: "1 + 1"を表すnodeには整数型がセットされる。
 //     "&x + 1"を表すnodeにはポインタ型がセットされる。
@@ -63,7 +69,6 @@ void add_type(Node *node) {
         case ND_NE:
         case ND_LT:
         case ND_LE:
-        case ND_FUNCCALL:
         case ND_NUM:
             node->type = long_type;
             return;

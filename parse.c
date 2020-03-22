@@ -101,14 +101,17 @@ static Var *new_lvar(char *name, Type *type) {
 
 // 引数として与えられた変数名のVar構造体を生成する。
 // 生成したVar構造体はglobalsリストに追加される。
-static Var *new_gvar(char *name, Type *type) {
+static Var *new_gvar(char *name, Type *type, bool emit) {
     Var *gvar = new_var(name, type, false);
     push_scope(name)->var = gvar;
 
-    VarList *vl = calloc(1, sizeof(VarList));
-    vl->var = gvar;
-    vl->next = globals;
-    globals = vl;
+    if(emit) {
+        VarList *vl = calloc(1, sizeof(VarList));
+        vl->var = gvar;
+        vl->next = globals;
+        globals = vl;
+    }
+
     return gvar;
 }
 
@@ -373,8 +376,12 @@ static Function *function() {
 
     Type *ty = basetype();
     char *name = NULL;
-    declarator(ty, &name);
+    ty = declarator(ty, &name);
 
+    // 関数の型をスコープに追加する
+    new_gvar(name, func_type(ty), false);
+
+    // 関数オブジェクトを生成
     Function *func = calloc(1, sizeof(Function));
     func->name = name;
 
@@ -391,6 +398,7 @@ static Function *function() {
         return NULL;
     }
 
+    // 関数本体の読み取り
     Node head = {};
     Node *cur = &head;
     expect("{");
@@ -415,7 +423,7 @@ static void global_var() {
     expect(";");
 
     // global変数に定義した変数を追加
-    new_gvar(strndup(var_name, strlen(var_name)), type);
+    new_gvar(strndup(var_name, strlen(var_name)), type, true);
 }
 
 // declaration = basetype declarator type-suffix ("=" expr)? ";"
@@ -806,6 +814,18 @@ static Node *primary() {
             node = alloc_node(ND_FUNCCALL);
             node->func_name = strndup(tok->str, tok->len);
             node->args = func_args();
+            add_type(node);
+
+            VarScope *sc = find_var(tok);
+            if(sc) {
+                if(!sc->var || sc->var->type->ty != FUNC) {
+                    error("関数ではありません");
+                }
+                node->type = sc->var->type->return_ty;
+            } else {
+                warn(tok, "暗黙的な関数宣言です");
+                node->type = int_type;
+            }
             return node;
         }
 
@@ -827,7 +847,8 @@ static Node *primary() {
     if(tok) {
         // 文字列リテラルをグローバル変数に追加する
         Node *node = alloc_node(ND_VAR);
-        Var *gvar = new_gvar(new_label(), array_of(char_type, tok->cont_len));
+        Var *gvar =
+            new_gvar(new_label(), array_of(char_type, tok->cont_len), true);
         gvar->contents = tok->contents;
         gvar->cont_len = tok->cont_len;
         node->var = gvar;

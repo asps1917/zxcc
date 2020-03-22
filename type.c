@@ -1,5 +1,6 @@
 #include "zxcc.h"
 
+Type *void_type = &(Type){VOID, 1, 1};
 Type *char_type = &(Type){CHAR, 1, 1};
 Type *short_type = &(Type){SHORT, 2, 2};
 Type *int_type = &(Type){INT, 4, 4};
@@ -95,6 +96,9 @@ void add_type(Node *node) {
                 error("無効なデリファレンスです");
             }
             node->type = node->lhs->type->ptr_to;
+            if(node->type->ty == VOID) {
+                error("void型へのポインタに対するデリファレンスです");
+            }
             return;
         case ND_STMT_EXPR: {
             Node *last = node->block;

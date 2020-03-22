@@ -219,13 +219,16 @@ Program *program() {
 }
 
 // basetype = builtin-type | struct-decl | typedef-name
-// builtin-type   = "char" | "short" | "int" | "long"
+// builtin-type   = "void" | "char" | "short" | "int" | "long"
 // パースした型を表すType構造体へのポインタを返す
 static Type *basetype() {
     if(!is_typename()) {
         error("型名ではありません");
     }
 
+    if(consume("void")) {
+        return void_type;
+    }
     if(consume("char")) {
         return char_type;
     }
@@ -437,6 +440,11 @@ static Node *declaration() {
     char *var_name = NULL;
     type = declarator(type, &var_name);
     type = type_suffix(type);
+
+    if(type->ty == VOID) {
+        error("変数がvoid型として宣言されています");
+    }
+
     // localsに定義した変数を追加
     Var *lvar = new_lvar(strndup(var_name, strlen(var_name)), type);
 
@@ -459,8 +467,8 @@ static Node *read_expr_stmt(void) { return new_unary(ND_EXPR_STMT, expr()); }
 
 // 次のトークンが型の場合trueを返す
 static bool is_typename(void) {
-    return match("char") || match("short") || match("int") || match("long") ||
-           match("struct") || find_typedef(token);
+    return match("void") || match("char") || match("short") || match("int") ||
+           match("long") || match("struct") || find_typedef(token);
 }
 
 static Node *stmt() {

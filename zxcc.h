@@ -168,6 +168,7 @@ Program *program();
 //
 
 typedef enum {
+    VOID,
     CHAR,
     SHORT,
     INT,
@@ -197,6 +198,7 @@ struct Member {
     int offset;
 };
 
+Type *void_type;
 Type *char_type;
 Type *short_type;
 Type *int_type;

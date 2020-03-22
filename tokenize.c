@@ -166,7 +166,7 @@ static bool is_alnum(char c) { return is_alpha(c) || ('0' <= c && c <= '9'); }
 static char *is_reserved(char *p) {
     static char *keywords[] = {"if",      "else",  "while",  "for",
                                "int",     "char",  "sizeof", "struct",
-                               "typedef", "short", "long"};
+                               "typedef", "short", "long",   "void"};
 
     for(int i = 0; i < sizeof(keywords) / sizeof(*keywords); i++) {
         int len_keyword = strlen(keywords[i]);

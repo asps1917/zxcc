@@ -158,7 +158,7 @@ static char *new_label(void) {
     return strndup(buf, 20);
 }
 
-static Type *basetype();
+static Type *basetype(bool *is_typedef);
 static bool is_typename();
 static Function *function();
 static Type *declarator(Type *ty, char **name);
@@ -183,7 +183,8 @@ static Node *primary();
 static bool is_function() {
     Token *cur = token;
 
-    Type *ty = basetype();
+    bool is_typedef;
+    Type *ty = basetype(&is_typedef);
     char *name = NULL;
     declarator(ty, &name);
     bool retval = name && consume("(");
@@ -220,35 +221,105 @@ Program *program() {
 
 // basetype = builtin-type | struct-decl | typedef-name
 // builtin-type   = "void" | "_Bool" | "char" | "short" | "int" | "long"
+//                | "long" "long"
 // パースした型を表すType構造体へのポインタを返す
-static Type *basetype() {
+static Type *basetype(bool *is_typedef) {
     if(!is_typename()) {
         error("型名ではありません");
     }
 
-    if(consume("void")) {
-        return void_type;
+    enum {
+        VOID = 1 << 0,
+        BOOL = 1 << 2,
+        CHAR = 1 << 4,
+        SHORT = 1 << 6,
+        INT = 1 << 8,
+        LONG = 1 << 10,
+        OTHER = 1 << 12,
+    };
+
+    Type *ty = int_type;
+    int counter = 0;
+
+    if(is_typedef) {
+        *is_typedef = false;
     }
-    if(consume("_Bool")) {
-        return bool_type;
+
+    while(is_typename()) {
+        Token *tok = token;
+
+        // 記憶クラス指定子の処理
+        if(consume("typedef")) {
+            if(!is_typedef) {
+                error("無効な記憶クラス指定子です");
+            }
+            *is_typedef = true;
+            continue;
+        }
+
+        // ユーザが定義した型の処理
+        if(!match("void") && !match("_Bool") && !match("char") &&
+           !match("short") && !match("int") && !match("long")) {
+            if(counter) {
+                break;
+            }
+
+            if(match("struct")) {
+                ty = struct_decl();
+            } else {
+                ty = find_typedef(token);
+                assert(ty);
+                token = token->next;
+            }
+
+            counter |= OTHER;
+            continue;
+        }
+
+        // 組み込み型の処理
+        if(consume("void")) {
+            counter += VOID;
+        } else if(consume("_Bool")) {
+            counter += BOOL;
+        } else if(consume("char")) {
+            counter += CHAR;
+        } else if(consume("short")) {
+            counter += SHORT;
+        } else if(consume("int")) {
+            counter += INT;
+        } else if(consume("long")) {
+            counter += LONG;
+        }
+
+        switch(counter) {
+            case VOID:
+                ty = void_type;
+                break;
+            case BOOL:
+                ty = bool_type;
+                break;
+            case CHAR:
+                ty = char_type;
+                break;
+            case SHORT:
+            case SHORT + INT:
+                ty = short_type;
+                break;
+            case INT:
+                ty = int_type;
+                break;
+            case LONG:
+            case LONG + INT:
+            case LONG + LONG:
+            case LONG + LONG + INT:
+                ty = long_type;
+                break;
+            default:
+                error("無効な型です");
+        }
     }
-    if(consume("char")) {
-        return char_type;
-    }
-    if(consume("short")) {
-        return short_type;
-    }
-    if(consume("int")) {
-        return int_type;
-    }
-    if(consume("long")) {
-        consume("long");
-        return long_type;
-    }
-    if(consume("struct")) {
-        return struct_decl();
-    }
-    return find_var(consume_ident())->type_def;
+
+    return ty;
 }
 
 // declarator = "*"* ("(" declarator ")" | ident) type-suffix
@@ -293,6 +364,7 @@ static void push_tag_scope(Token *tok, Type *ty) {
 //             | "struct" ident? "{" struct-member "}"
 static Type *struct_decl(void) {
     // 構造体タグの読み出し
+    expect("struct");
     Token *tag = consume_ident();
     if(tag && !match("{")) {
         TagScope *sc = find_tag(tag);
@@ -339,7 +411,7 @@ static Type *struct_decl(void) {
 
 // struct-member = basetype declarator type-suffix ";"
 static Member *struct_member(void) {
-    Type *ty = basetype();
+    Type *ty = basetype(NULL);
     char *name = NULL;
     ty = declarator(ty, &name);
     ty = type_suffix(ty);
@@ -359,7 +431,7 @@ static VarList *params() {
     VarList *cur = head;
 
     while(1) {
-        Type *type = basetype();
+        Type *type = basetype(NULL);
         char *var_name = NULL;
         type = declarator(type, &var_name);
         type = type_suffix(type);
@@ -381,7 +453,7 @@ static VarList *params() {
 static Function *function() {
     locals = NULL;
 
-    Type *ty = basetype();
+    Type *ty = basetype(NULL);
     char *name = NULL;
     ty = declarator(ty, &name);
 
@@ -423,20 +495,26 @@ static Function *function() {
 
 // global-var = basetype declarator type-suffix ";"
 static void global_var() {
-    Type *type = basetype();
+    bool is_typedef;
+    Type *type = basetype(&is_typedef);
     char *var_name = NULL;
     type = declarator(type, &var_name);
     type = type_suffix(type);
     expect(";");
 
-    // global変数に定義した変数を追加
-    new_gvar(strndup(var_name, strlen(var_name)), type, true);
+    if(is_typedef) {
+        push_scope(strndup(var_name, strlen(var_name)))->type_def = type;
+    } else {
+        // global変数に定義した変数を追加
+        new_gvar(strndup(var_name, strlen(var_name)), type, true);
+    }
 }
 
 // declaration = basetype declarator type-suffix ("=" expr)? ";"
 //             | basetype ";"
 static Node *declaration() {
-    Type *type = basetype();
+    bool is_typedef;
+    Type *type = basetype(&is_typedef);
     if(consume(";")) {
         return alloc_node(ND_NULL);
     }
@@ -444,6 +522,12 @@ static Node *declaration() {
     char *var_name = NULL;
     type = declarator(type, &var_name);
     type = type_suffix(type);
+
+    if(is_typedef) {
+        expect(";");
+        push_scope(var_name)->type_def = type;
+        return alloc_node(ND_NULL);
+    }
 
     if(type->ty == VOID) {
         error("変数がvoid型として宣言されています");
@@ -473,7 +557,7 @@ static Node *read_expr_stmt(void) { return new_unary(ND_EXPR_STMT, expr()); }
 static bool is_typename(void) {
     return match("void") || match("_Bool") || match("char") || match("short") ||
            match("int") || match("long") || match("struct") ||
-           find_typedef(token);
+           match("typedef") || find_typedef(token);
 }
 
 static Node *stmt() {
@@ -490,7 +574,6 @@ static Node *stmt() {
 //      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //      | expr ";"
 //      | declaration
-//      | "typedef" basetype declarator type-suffix ";"
 static Node *stmt2() {
     Node *node;
 
@@ -560,17 +643,6 @@ static Node *stmt2() {
         }
         node->then = stmt();
         return node;
-    }
-
-    if(consume("typedef")) {
-        Type *ty = basetype();
-        char *name = NULL;
-        ty = declarator(ty, &name);
-        ty = type_suffix(ty);
-        expect(";");
-
-        push_scope(name)->type_def = ty;
-        return alloc_node(ND_NULL);
     }
 
     // 変数定義

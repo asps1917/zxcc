@@ -89,6 +89,7 @@ typedef enum {
     ND_DEREF,      // 単項 *
     ND_NULL,       // null
     ND_STMT_EXPR,  // Statement expression
+    ND_CAST,       // 型のキャスト
 } NodeKind;
 
 // 変数の型

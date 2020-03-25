@@ -89,6 +89,24 @@ static void store(Type *type) {
     printf("  push rdi\n");
 }
 
+static void truncate(Type *ty) {
+    printf("  pop rax\n");
+
+    if(ty->ty == BOOL) {
+        printf("  cmp rax, 0\n");
+        printf("  setne al\n");
+    }
+
+    if(ty->size == 1) {
+        printf("  movsx rax, al\n");
+    } else if(ty->size == 2) {
+        printf("  movsx rax, ax\n");
+    } else if(ty->size == 4) {
+        printf("  movsxd rax, eax\n");
+    }
+    printf("  push rax\n");
+}
+
 // 抽象構文木の根ノードを受け取りスタックマシンのコードを生成する
 static void gen(Node *node) {
     int label_num;
@@ -242,6 +260,10 @@ static void gen(Node *node) {
             printf(".L.end.%d:\n", label_num);
             printf("  push rax\n");
             debug_printf("gen - ND_FUNCCALL end");
+            return;
+        case ND_CAST:
+            gen(node->lhs);
+            truncate(node->type);
             return;
     }
 

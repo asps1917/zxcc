@@ -177,6 +177,7 @@ static Node *equality();
 static Node *relational();
 static Node *add();
 static Node *mul();
+static Node *cast();
 static Node *unary();
 static Node *postfix();
 static Node *primary();
@@ -770,27 +771,46 @@ static Node *add() {
     }
 }
 
-// mul = unary ("*" unary | "/" unary)*
+// mul = cast ("*" cast | "/" cast)*
 static Node *mul() {
-    Node *node = unary();
+    Node *node = cast();
 
     for(;;) {
         if(consume("*"))
-            node = new_binary(ND_MUL, node, unary());
+            node = new_binary(ND_MUL, node, cast());
         else if(consume("/"))
-            node = new_binary(ND_DIV, node, unary());
+            node = new_binary(ND_DIV, node, cast());
         else
             return node;
     }
 }
 
-// unary = ("+" | "-" | "*" | "&")? unary
+// cast = "(" type-name ")" cast | unary
+static Node *cast() {
+    Token *tok = token;
+
+    if(consume("(")) {
+        if(is_typename()) {
+            Type *ty = type_name();
+            expect(")");
+            Node *node = new_unary(ND_CAST, cast());
+            add_type(node->lhs);
+            node->type = ty;
+            return node;
+        }
+        token = tok;
+    }
+
+    return unary();
+}
+
+// unary = ("+" | "-" | "*" | "&")? cast
 //       | postfix
 static Node *unary() {
-    if(consume("+")) return unary();
-    if(consume("-")) return new_binary(ND_SUB, new_node_num(0), unary());
-    if(consume("*")) return new_unary(ND_DEREF, unary());
-    if(consume("&")) return new_unary(ND_ADDR, unary());
+    if(consume("+")) return cast();
+    if(consume("-")) return new_binary(ND_SUB, new_node_num(0), cast());
+    if(consume("*")) return new_unary(ND_DEREF, cast());
+    if(consume("&")) return new_unary(ND_ADDR, cast());
     return postfix();
 }
 

@@ -162,7 +162,9 @@ static Type *basetype(bool *is_typedef);
 static bool is_typename();
 static Function *function();
 static Type *declarator(Type *ty, char **name);
+static Type *abstract_declarator(Type *ty);
 static Type *type_suffix(Type *ty);
+static Type *type_name();
 static Type *struct_decl();
 static Member *struct_member();
 static void global_var();
@@ -340,6 +342,22 @@ static Type *declarator(Type *ty, char **name) {
     return type_suffix(ty);
 }
 
+// abstract-declarator = "*"* ("(" abstract-declarator ")")? type-suffix
+static Type *abstract_declarator(Type *ty) {
+    while(consume("*")) {
+        ty = pointer_to(ty);
+    }
+
+    if(consume("(")) {
+        Type *placeholder = calloc(1, sizeof(Type));
+        Type *new_ty = abstract_declarator(placeholder);
+        expect(")");
+        memcpy(placeholder, type_suffix(ty), sizeof(Type));
+        return new_ty;
+    }
+    return type_suffix(ty);
+}
+
 // type-suffix = ("[" num "]" type-suffix)?
 // 変数宣言の型名のsuffix([])を読み取る
 static Type *type_suffix(Type *ty) {
@@ -350,6 +368,13 @@ static Type *type_suffix(Type *ty) {
     expect("]");
     ty = type_suffix(ty);
     return array_of(ty, sz);
+}
+
+// type-name = basetype abstract-declarator type-suffix
+static Type *type_name() {
+    Type *ty = basetype(NULL);
+    ty = abstract_declarator(ty);
+    return type_suffix(ty);
 }
 
 static void push_tag_scope(Token *tok, Type *ty) {
@@ -867,6 +892,7 @@ static Node *stmt_expr() {
 //         | str
 //         | ident func_args?
 //         | "(" expr ")"
+//         | "sizeof" "(" type-name ")"
 //         | "sizeof" unary
 //         | "(" "{" stmt-expr-tail
 static Node *primary() {
@@ -880,9 +906,19 @@ static Node *primary() {
         expect(")");
         return node;
     }
+    Token *tok;
 
     // sizeof
-    if(consume("sizeof")) {
+    if(tok = consume("sizeof")) {
+        if(consume("(")) {
+            if(is_typename()) {
+                Type *ty = type_name();
+                expect(")");
+                return new_node_num(ty->size);
+            }
+            token = tok->next;
+        }
+
         // 演算対象となる子ノードの型サイズを出力
         Node *node = unary();
         add_type(node);
@@ -890,7 +926,7 @@ static Node *primary() {
     }
 
     // identトークンのチェック
-    Token *tok = consume_ident();
+    tok = consume_ident();
     if(tok) {
         Node *node;
 

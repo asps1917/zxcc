@@ -98,7 +98,12 @@ static void gen(Node *node) {
             return;
         case ND_NUM:
             debug_printf("gen - ND_NUM");
-            printf("  push %d\n", node->val);
+            if(node->val == (int)node->val) {
+                printf("  push %d\n", node->val);
+            } else {
+                printf("  movabs rax, %ld\n", node->val);
+                printf("  push rax\n");
+            }
             return;
         case ND_EXPR_STMT:
             debug_printf("gen - ND_EXPR_STMT");

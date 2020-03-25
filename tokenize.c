@@ -63,13 +63,14 @@ void warn(Token *tok, char *fmt, ...) {
 }
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進めて
-// 真を返す。それ以外の場合には偽を返す。
-bool consume(char *op) {
+// そのトークンを返す。それ以外の場合にはNULLを返す。
+Token *consume(char *op) {
     if(token->kind != TK_RESERVED || strlen(op) != token->len ||
        memcmp(token->str, op, token->len))
-        return false;
+        return NULL;
+    Token *tok = token;
     token = token->next;
-    return true;
+    return tok;
 }
 
 // 次のトークンが期待している記号のときには真を返す。(トークンは読み進めない)

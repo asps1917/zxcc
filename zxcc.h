@@ -47,7 +47,7 @@ void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 void warn(Token *tok, char *fmt, ...);
 Token *tokenize();
-bool consume(char *op);
+Token *consume(char *op);
 bool match(char *op);
 Token *consume_ident();
 Token *consume_str();

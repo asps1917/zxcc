@@ -232,6 +232,30 @@ static Token *read_string_literal(Token *cur, char *start) {
     return tok;
 }
 
+static Token *read_char_literal(Token *cur, char *start) {
+    char *p = start + 1;
+    if(*p == '\0') {
+        error_at(start, "文字リテラルが閉じられていません");
+    }
+
+    char c;
+    if(*p == '\\') {
+        p++;
+        c = get_escape_char(*p++);
+    } else {
+        c = *p++;
+    }
+
+    if(*p != '\'') {
+        error_at(start, "長すぎる文字リテラルです");
+    }
+    p++;
+
+    Token *tok = new_token(TK_NUM, cur, start, p - start);
+    tok->val = c;
+    return tok;
+}
+
 // 入力文字列user_inputをトークナイズしてそれを返す
 Token *tokenize() {
     char *p = user_input;
@@ -295,6 +319,13 @@ Token *tokenize() {
         // 文字列リテラル
         if(*p == '"') {
             cur = read_string_literal(cur, p);
+            p += cur->len;
+            continue;
+        }
+
+        // 文字リテラル
+        if(*p == '\'') {
+            cur = read_char_literal(cur, p);
             p += cur->len;
             continue;
         }

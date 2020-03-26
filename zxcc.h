@@ -179,6 +179,7 @@ typedef enum {
     ARRAY,   // 配列
     STRUCT,  // 構造体
     FUNC,    // 関数
+    ENUM,    // enum
 } TypeKind;
 
 // 型を表す型
@@ -212,6 +213,7 @@ Type *array_of(Type *base, int len);
 bool is_integer(Type *type);
 void add_type(Node *node);
 Type *func_type(Type *return_ty);
+Type *enum_type();
 int align_to(int n, int align);
 
 //

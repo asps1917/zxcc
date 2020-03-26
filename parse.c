@@ -1,15 +1,17 @@
 #include "zxcc.h"
 
-// ローカル・グローバル変数、typedefのスコープ
+// ローカル・グローバル変数、typedef、enumのスコープ
 typedef struct VarScope VarScope;
 struct VarScope {
     VarScope *next;
     char *name;
     Var *var;
     Type *type_def;
+    Type *enum_ty;
+    int enum_val;
 };
 
-// 構造体タグのスコープ
+// 構造体タグ、enumタグのスコープ
 typedef struct TagScope TagScope;
 struct TagScope {
     TagScope *next;
@@ -29,7 +31,7 @@ static VarList *globals;
 
 // 変数、typedefのスコープ
 static VarScope *var_scope;
-// 構造体タグのスコープ
+// 構造体タグ、enumタグのスコープ
 static TagScope *tag_scope;
 
 // ブロックスコープの開始処理
@@ -166,6 +168,7 @@ static Type *abstract_declarator(Type *ty);
 static Type *type_suffix(Type *ty);
 static Type *type_name();
 static Type *struct_decl();
+static Type *enum_specifier();
 static Member *struct_member();
 static void global_var();
 static Node *declaration();
@@ -222,7 +225,7 @@ Program *program() {
     return prog;
 }
 
-// basetype = builtin-type | struct-decl | typedef-name
+// basetype = builtin-type | struct-decl | typedef-name | enum-specifier
 // builtin-type   = "void" | "_Bool" | "char" | "short" | "int" | "long"
 //                | "long" "long"
 // パースした型を表すType構造体へのポインタを返す
@@ -269,6 +272,8 @@ static Type *basetype(bool *is_typedef) {
 
             if(match("struct")) {
                 ty = struct_decl();
+            } else if(match("enum")) {
+                ty = enum_specifier();
             } else {
                 ty = find_typedef(token);
                 assert(ty);
@@ -397,6 +402,9 @@ static Type *struct_decl(void) {
         if(!sc) {
             error("未定義の構造体の型です");
         }
+        if(sc->ty->ty != STRUCT) {
+            error("構造体タグではありません");
+        }
         return sc->ty;
     }
 
@@ -429,6 +437,63 @@ static Type *struct_decl(void) {
     ty->size = align_to(offset, ty->align);
 
     // 構造体の型を登録
+    if(tag) {
+        push_tag_scope(tag, ty);
+    }
+    return ty;
+}
+
+// パース中のトークンがenumのリストの末尾だった場合trueを返す。
+static bool consume_end() {
+    Token *tok = token;
+    if(consume("}") || (consume(",") && consume("}"))) {
+        return true;
+    }
+    token = tok;
+    return false;
+}
+
+// enum-specifier = "enum" ident
+//                | "enum" ident? "{" enum-list? "}"
+//
+// enum-list = ident ("=" num)? ("," ident ("=" num)?)* ","?
+static Type *enum_specifier() {
+    expect("enum");
+    Type *ty = enum_type();
+
+    // enumタグの読み出し
+    Token *tag = consume_ident();
+    if(tag && !match("{")) {
+        TagScope *sc = find_tag(tag);
+        if(!sc) {
+            error("未定義のenum型です");
+        }
+        if(sc->ty->ty != ENUM) {
+            error("enumタグではありません");
+        }
+        return sc->ty;
+    }
+
+    expect("{");
+
+    // enumのリストを読み出す
+    int cnt = 0;
+    for(;;) {
+        char *name = expect_ident();
+        if(consume("=")) {
+            cnt = expect_number();
+        }
+
+        VarScope *sc = push_scope(name);
+        sc->enum_ty = ty;
+        sc->enum_val = cnt++;
+
+        if(consume_end()) {
+            break;
+        }
+        expect(",");
+    }
+
     if(tag) {
         push_tag_scope(tag, ty);
     }
@@ -582,7 +647,7 @@ static Node *read_expr_stmt(void) { return new_unary(ND_EXPR_STMT, expr()); }
 // 次のトークンが型の場合trueを返す
 static bool is_typename(void) {
     return match("void") || match("_Bool") || match("char") || match("short") ||
-           match("int") || match("long") || match("struct") ||
+           match("int") || match("long") || match("struct") || match("enum") ||
            match("typedef") || find_typedef(token);
 }
 
@@ -970,13 +1035,18 @@ static Node *primary() {
             return node;
         }
 
-        // ローカル変数
+        // 変数、enum定数
         VarScope *sc = find_var(tok);
 
-        if(sc && sc->var) {
-            node = alloc_node(ND_VAR);
-            node->var = sc->var;
-            return node;
+        if(sc) {
+            if(sc->var) {
+                node = alloc_node(ND_VAR);
+                node->var = sc->var;
+                return node;
+            }
+            if(sc->enum_ty) {
+                return new_node_num(sc->enum_val);
+            }
         }
 
         error("未定義のローカル変数%sを参照しています",

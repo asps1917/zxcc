@@ -45,6 +45,8 @@ Type *func_type(Type *return_ty) {
     return ty;
 }
 
+Type *enum_type(void) { return new_type(ENUM, 4, 4); }
+
 // 引数nodeと子ノードに対して、そのnodeを評価した結果適用される型をセットする。
 // 例: "1 + 1"を表すnodeには整数型がセットされる。
 //     "&x + 1"を表すnodeにはポインタ型がセットされる。

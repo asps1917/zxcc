@@ -63,38 +63,44 @@ bool at_eof();
 
 // 抽象構文木のノードの種類
 typedef enum {
-    ND_ADD,        // num + num
-    ND_PTR_ADD,    // ptr + num or num + ptr
-    ND_SUB,        // num - num
-    ND_PTR_SUB,    // ptr - num or num - ptr
-    ND_PTR_DIFF,   // ptr - ptr
-    ND_MUL,        // *
-    ND_DIV,        // /
-    ND_EQ,         // ==
-    ND_NE,         // !=
-    ND_LT,         // <
-    ND_LE,         // <=
-    ND_ASSIGN,     // =
-    ND_PRE_INC,    // pre ++
-    ND_PRE_DEC,    // pre --
-    ND_POST_INC,   // post ++
-    ND_POST_DEC,   // post --
-    ND_COMMA,      // ,
-    ND_MEMBER,     // . (構造体のメンバアクセス)
-    ND_VAR,        // ローカル変数
-    ND_NUM,        // 整数
-    ND_RETURN,     // return
-    ND_EXPR_STMT,  // Expression statement
-    ND_IF,         // if
-    ND_WHILE,      // while
-    ND_FOR,        // for
-    ND_BLOCK,      // ブロック
-    ND_FUNCCALL,   // 関数呼び出し
-    ND_ADDR,       // 単項 &
-    ND_DEREF,      // 単項 *
-    ND_NULL,       // null
-    ND_STMT_EXPR,  // Statement expression
-    ND_CAST,       // 型のキャスト
+    ND_ADD,         // num + num
+    ND_PTR_ADD,     // ptr + num or num + ptr
+    ND_SUB,         // num - num
+    ND_PTR_SUB,     // ptr - num or num - ptr
+    ND_PTR_DIFF,    // ptr - ptr
+    ND_MUL,         // *
+    ND_DIV,         // /
+    ND_EQ,          // ==
+    ND_NE,          // !=
+    ND_LT,          // <
+    ND_LE,          // <=
+    ND_ASSIGN,      // =
+    ND_PRE_INC,     // pre ++
+    ND_PRE_DEC,     // pre --
+    ND_POST_INC,    // post ++
+    ND_POST_DEC,    // post --
+    ND_ADD_EQ,      // +=
+    ND_PTR_ADD_EQ,  // +=
+    ND_SUB_EQ,      // -=
+    ND_PTR_SUB_EQ,  // -=
+    ND_MUL_EQ,      // *=
+    ND_DIV_EQ,      // /=
+    ND_COMMA,       // ,
+    ND_MEMBER,      // . (構造体のメンバアクセス)
+    ND_VAR,         // ローカル変数
+    ND_NUM,         // 整数
+    ND_RETURN,      // return
+    ND_EXPR_STMT,   // Expression statement
+    ND_IF,          // if
+    ND_WHILE,       // while
+    ND_FOR,         // for
+    ND_BLOCK,       // ブロック
+    ND_FUNCCALL,    // 関数呼び出し
+    ND_ADDR,        // 単項 &
+    ND_DEREF,       // 単項 *
+    ND_NULL,        // null
+    ND_STMT_EXPR,   // Statement expression
+    ND_CAST,        // 型のキャスト
 } NodeKind;
 
 // 変数の型

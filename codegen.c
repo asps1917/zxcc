@@ -119,6 +119,78 @@ static void dec(Type *ty) {
     printf("  push rax\n");
 }
 
+static void gen_binary(Node *node) {
+    printf("  pop rdi\n");
+    printf("  pop rax\n");
+
+    switch(node->kind) {
+        case ND_ADD:
+        case ND_ADD_EQ:
+            debug_printf("gen - ND_ADD");
+            printf("  add rax, rdi\n");
+            break;
+        case ND_PTR_ADD:
+        case ND_PTR_ADD_EQ:
+            debug_printf("gen - ND_PTR_ADD");
+            printf("  imul rdi, %d\n", node->type->ptr_to->size);
+            printf("  add rax, rdi\n");
+            break;
+        case ND_SUB:
+        case ND_SUB_EQ:
+            debug_printf("gen - ND_SUB");
+            printf("  sub rax, rdi\n");
+            break;
+        case ND_PTR_SUB:
+        case ND_PTR_SUB_EQ:
+            printf("  imul rdi, %d\n", node->type->ptr_to->size);
+            printf("  sub rax, rdi\n");
+            break;
+        case ND_PTR_DIFF:
+            printf("  sub rax, rdi\n");
+            printf("  cqo\n");
+            printf("  mov rdi, %d\n", node->lhs->type->ptr_to->size);
+            printf("  idiv rdi\n");
+            break;
+        case ND_MUL:
+        case ND_MUL_EQ:
+            debug_printf("gen - ND_MUL");
+            printf("  imul rax, rdi\n");
+            break;
+        case ND_DIV:
+        case ND_DIV_EQ:
+            debug_printf("gen - ND_DIV");
+            printf("  cqo\n");
+            printf("  idiv rdi\n");
+            break;
+        case ND_EQ:
+            debug_printf("gen - ND_EQ");
+            printf("  cmp rax, rdi\n");
+            printf("  sete al\n");
+            printf("  movzb rax, al\n");
+            break;
+        case ND_NE:
+            debug_printf("gen - ND_NE");
+            printf("  cmp rax, rdi\n");
+            printf("  setne al\n");
+            printf("  movzb rax, al\n");
+            break;
+        case ND_LT:
+            debug_printf("gen - ND_LT");
+            printf("  cmp rax, rdi\n");
+            printf("  setl al\n");
+            printf("  movzb rax, al\n");
+            break;
+        case ND_LE:
+            debug_printf("gen - ND_LE");
+            printf("  cmp rax, rdi\n");
+            printf("  setle al\n");
+            printf("  movzb rax, al\n");
+            break;
+    }
+
+    printf("  push rax\n");
+}
+
 // 抽象構文木の根ノードを受け取りスタックマシンのコードを生成する
 static void gen(Node *node) {
     int label_num;
@@ -193,6 +265,19 @@ static void gen(Node *node) {
             store(node->type);
             inc(node->type);
             debug_printf("gen - ND_POST_DEC end");
+            return;
+        case ND_ADD_EQ:
+        case ND_PTR_ADD_EQ:
+        case ND_SUB_EQ:
+        case ND_PTR_SUB_EQ:
+        case ND_MUL_EQ:
+        case ND_DIV_EQ:
+            gen_lval(node->lhs);
+            printf("  push [rsp]\n");
+            load(node->lhs->type);
+            gen(node->rhs);
+            gen_binary(node);
+            store(node->type);
             return;
         case ND_COMMA:
             debug_printf("gen - ND_COMMA");
@@ -325,70 +410,7 @@ static void gen(Node *node) {
 
     gen(node->lhs);
     gen(node->rhs);
-
-    printf("  pop rdi\n");
-    printf("  pop rax\n");
-
-    switch(node->kind) {
-        case ND_ADD:
-            debug_printf("gen - ND_ADD");
-            printf("  add rax, rdi\n");
-            break;
-        case ND_PTR_ADD:
-            debug_printf("gen - ND_PTR_ADD");
-            printf("  imul rdi, %d\n", node->type->ptr_to->size);
-            printf("  add rax, rdi\n");
-            break;
-        case ND_SUB:
-            debug_printf("gen - ND_SUB");
-            printf("  sub rax, rdi\n");
-            break;
-        case ND_PTR_SUB:
-            printf("  imul rdi, %d\n", node->type->ptr_to->size);
-            printf("  sub rax, rdi\n");
-            break;
-        case ND_PTR_DIFF:
-            printf("  sub rax, rdi\n");
-            printf("  cqo\n");
-            printf("  mov rdi, %d\n", node->lhs->type->ptr_to->size);
-            printf("  idiv rdi\n");
-            break;
-        case ND_MUL:
-            debug_printf("gen - ND_MUL");
-            printf("  imul rax, rdi\n");
-            break;
-        case ND_DIV:
-            debug_printf("gen - ND_DIV");
-            printf("  cqo\n");
-            printf("  idiv rdi\n");
-            break;
-        case ND_EQ:
-            debug_printf("gen - ND_EQ");
-            printf("  cmp rax, rdi\n");
-            printf("  sete al\n");
-            printf("  movzb rax, al\n");
-            break;
-        case ND_NE:
-            debug_printf("gen - ND_NE");
-            printf("  cmp rax, rdi\n");
-            printf("  setne al\n");
-            printf("  movzb rax, al\n");
-            break;
-        case ND_LT:
-            debug_printf("gen - ND_LT");
-            printf("  cmp rax, rdi\n");
-            printf("  setl al\n");
-            printf("  movzb rax, al\n");
-            break;
-        case ND_LE:
-            debug_printf("gen - ND_LE");
-            printf("  cmp rax, rdi\n");
-            printf("  setle al\n");
-            printf("  movzb rax, al\n");
-            break;
-    }
-
-    printf("  push rax\n");
+    gen_binary(node);
 }
 
 // レジスタ上の引数をスタック領域にコピーする処理をアセンブリに出力する

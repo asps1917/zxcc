@@ -144,6 +144,12 @@ static void gen(Node *node) {
             store(node->type);
             debug_printf("gen - ND_ASSIGN end");
             return;
+        case ND_COMMA:
+            debug_printf("gen - ND_COMMA");
+            gen(node->lhs);
+            gen(node->rhs);
+            debug_printf("gen - ND_COMMA end");
+            return;
         case ND_ADDR:
             debug_printf("gen - ND_ADDR");
             gen_lval(node->lhs);

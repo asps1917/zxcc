@@ -75,6 +75,7 @@ typedef enum {
     ND_LT,         // <
     ND_LE,         // <=
     ND_ASSIGN,     // =
+    ND_COMMA,      // ,
     ND_MEMBER,     // . (構造体のメンバアクセス)
     ND_VAR,        // ローカル変数
     ND_NUM,        // 整数

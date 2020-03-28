@@ -769,8 +769,15 @@ static Node *stmt2() {
     return node;
 }
 
-// expr = assign
-static Node *expr() { return assign(); }
+// expr = assign ("," assign)*
+static Node *expr() {
+    Node *node = assign();
+    while(consume(",")) {
+        node = new_unary(ND_EXPR_STMT, node);
+        node = new_binary(ND_COMMA, node, assign());
+    }
+    return node;
+}
 
 // assign = equality ("=" assign)?
 static Node *assign() {

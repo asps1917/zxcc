@@ -107,6 +107,8 @@ typedef enum {
     ND_CAST,        // 型のキャスト
     ND_NOT,         // !
     ND_BITNOT,      // ~
+    ND_LOGAND,      // &&
+    ND_LOGOR,       // ||
 } NodeKind;
 
 // 変数の型

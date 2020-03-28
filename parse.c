@@ -181,6 +181,8 @@ static Node *stmt();
 static Node *stmt2();
 static Node *expr();
 static Node *assign();
+static Node *logor();
+static Node *logand();
 static Node *bitand();
 static Node * bitor ();
 static Node *bitxor();
@@ -782,10 +784,10 @@ static Node *expr() {
     return node;
 }
 
-// assign    = bitor (assign-op assign)?
+// assign    = logor (assign-op assign)?
 // assign-op = "=" | "+=" | "-=" | "*=" | "/="
 static Node *assign() {
-    Node *node = bitor ();
+    Node *node = logor();
 
     if(consume("=")) {
         return new_binary(ND_ASSIGN, node, assign());
@@ -814,6 +816,24 @@ static Node *assign() {
         }
     }
 
+    return node;
+}
+
+// logor = logand ("||" logand)*
+static Node *logor() {
+    Node *node = logand();
+    while(consume("||")) {
+        node = new_binary(ND_LOGOR, node, logand());
+    }
+    return node;
+}
+
+// logand = bitor ("&&" bitor)*
+static Node *logand() {
+    Node *node = bitor ();
+    while(consume("&&")) {
+        node = new_binary(ND_LOGAND, node, bitor ());
+    }
     return node;
 }
 

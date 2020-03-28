@@ -181,6 +181,9 @@ static Node *stmt();
 static Node *stmt2();
 static Node *expr();
 static Node *assign();
+static Node *bitand();
+static Node * bitor ();
+static Node *bitxor();
 static Node *equality();
 static Node *relational();
 static Node *add();
@@ -779,10 +782,10 @@ static Node *expr() {
     return node;
 }
 
-// assign    = equality (assign-op assign)?
+// assign    = bitor (assign-op assign)?
 // assign-op = "=" | "+=" | "-=" | "*=" | "/="
 static Node *assign() {
-    Node *node = equality();
+    Node *node = bitor ();
 
     if(consume("=")) {
         return new_binary(ND_ASSIGN, node, assign());
@@ -811,6 +814,33 @@ static Node *assign() {
         }
     }
 
+    return node;
+}
+
+// bitor = bitxor ("|" bitxor)*
+static Node * bitor () {
+    Node *node = bitxor();
+    while(consume("|")) {
+        node = new_binary(ND_BITOR, node, bitxor());
+    }
+    return node;
+}
+
+// bitxor = bitand ("^" bitand)*
+static Node *bitxor() {
+    Node *node = bitand();
+    while(consume("^")) {
+        node = new_binary(ND_BITXOR, node, bitxor());
+    }
+    return node;
+}
+
+// bitand = equality ("&" equality)*
+static Node *bitand() {
+    Node *node = equality();
+    while(consume("&")) {
+        node = new_binary(ND_BITAND, node, equality());
+    }
     return node;
 }
 

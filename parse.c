@@ -678,7 +678,7 @@ static Node *stmt() {
 //      | "{" stmt* "}"
 //      | "if" "(" expr ")" stmt ("else" stmt)?
 //      | "while" "(" expr ")" stmt
-//      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+//      | "for" "(" (expr? ";" | declaration) expr? ";" expr? ")" stmt
 //      | expr ";"
 //      | declaration
 static Node *stmt2() {
@@ -733,10 +733,16 @@ static Node *stmt2() {
     if(consume("for")) {
         node = alloc_node(ND_FOR);
         expect("(");
+        Scope *sc = enter_scope();
+
         if(!consume(";")) {
             // 初期化式が存在する
-            node->init = read_expr_stmt();
-            expect(";");
+            if(is_typename()) {
+                node->init = declaration();
+            } else {
+                node->init = read_expr_stmt();
+                expect(";");
+            }
         }
         if(!consume(";")) {
             // ループの継続条件式が存在する
@@ -749,6 +755,7 @@ static Node *stmt2() {
             expect(")");
         }
         node->then = stmt();
+        leave_scope(sc);
         return node;
     }
 

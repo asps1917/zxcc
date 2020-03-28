@@ -298,6 +298,14 @@ static void gen(Node *node) {
             }
             debug_printf("gen - ND_DEREF end");
             return;
+        case ND_NOT:
+            gen(node->lhs);
+            printf("  pop rax\n");
+            printf("  cmp rax, 0\n");
+            printf("  sete al\n");
+            printf("  movzb rax, al\n");
+            printf("  push rax\n");
+            return;
         case ND_RETURN:
             debug_printf("gen - ND_RETURN");
             gen(node->lhs);

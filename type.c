@@ -75,6 +75,7 @@ void add_type(Node *node) {
         case ND_LT:
         case ND_LE:
         case ND_NUM:
+        case ND_NOT:
             node->type = long_type;
             return;
         case ND_PTR_ADD:

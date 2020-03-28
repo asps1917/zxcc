@@ -354,7 +354,9 @@ static void load_arg(Var *var, int idx) {
 static void funcgen(Function *func) {
     func_name = func->name;
     // 関数ラベル、プロローグ出力
-    printf(".global %s\n", func->name);
+    if(!func->is_static) {
+        printf(".global %s\n", func->name);
+    }
     printf("%s:\n", func->name);
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");

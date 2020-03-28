@@ -160,7 +160,12 @@ static char *new_label(void) {
     return strndup(buf, 20);
 }
 
-static Type *basetype(bool *is_typedef);
+typedef enum {
+    TYPEDEF = 1 << 0,
+    STATIC = 1 << 1,
+} StorageClass;
+
+static Type *basetype(StorageClass *sclass);
 static bool is_typename();
 static Function *function();
 static Type *declarator(Type *ty, char **name);
@@ -189,8 +194,8 @@ static Node *primary();
 static bool is_function() {
     Token *cur = token;
 
-    bool is_typedef;
-    Type *ty = basetype(&is_typedef);
+    StorageClass sclass;
+    Type *ty = basetype(&sclass);
     char *name = NULL;
     declarator(ty, &name);
     bool retval = name && consume("(");
@@ -229,7 +234,7 @@ Program *program() {
 // builtin-type   = "void" | "_Bool" | "char" | "short" | "int" | "long"
 //                | "long" "long"
 // パースした型を表すType構造体へのポインタを返す
-static Type *basetype(bool *is_typedef) {
+static Type *basetype(StorageClass *sclass) {
     if(!is_typename()) {
         error("型名ではありません");
     }
@@ -247,19 +252,28 @@ static Type *basetype(bool *is_typedef) {
     Type *ty = int_type;
     int counter = 0;
 
-    if(is_typedef) {
-        *is_typedef = false;
+    if(sclass) {
+        *sclass = 0;
     }
 
     while(is_typename()) {
         Token *tok = token;
 
         // 記憶クラス指定子の処理
-        if(consume("typedef")) {
-            if(!is_typedef) {
-                error("無効な記憶クラス指定子です");
+        if(match("typedef") || match("static")) {
+            if(!sclass) {
+                error("記憶クラス指定子は許可されていません");
             }
-            *is_typedef = true;
+
+            if(consume("typedef")) {
+                *sclass |= TYPEDEF;
+            } else if(consume("static")) {
+                *sclass |= STATIC;
+            }
+
+            if(*sclass & (*sclass - 1)) {
+                error("typedefとstaticは同時に使用できません");
+            }
             continue;
         }
 
@@ -544,7 +558,8 @@ static VarList *params() {
 static Function *function() {
     locals = NULL;
 
-    Type *ty = basetype(NULL);
+    StorageClass sclass;
+    Type *ty = basetype(&sclass);
     char *name = NULL;
     ty = declarator(ty, &name);
 
@@ -554,6 +569,7 @@ static Function *function() {
     // 関数オブジェクトを生成
     Function *func = calloc(1, sizeof(Function));
     func->name = name;
+    func->is_static = (sclass == STATIC);
 
     expect("(");
 
@@ -586,14 +602,14 @@ static Function *function() {
 
 // global-var = basetype declarator type-suffix ";"
 static void global_var() {
-    bool is_typedef;
-    Type *type = basetype(&is_typedef);
+    StorageClass sclass;
+    Type *type = basetype(&sclass);
     char *var_name = NULL;
     type = declarator(type, &var_name);
     type = type_suffix(type);
     expect(";");
 
-    if(is_typedef) {
+    if(sclass == TYPEDEF) {
         push_scope(strndup(var_name, strlen(var_name)))->type_def = type;
     } else {
         // global変数に定義した変数を追加
@@ -604,8 +620,8 @@ static void global_var() {
 // declaration = basetype declarator type-suffix ("=" expr)? ";"
 //             | basetype ";"
 static Node *declaration() {
-    bool is_typedef;
-    Type *type = basetype(&is_typedef);
+    StorageClass sclass;
+    Type *type = basetype(&sclass);
     if(consume(";")) {
         return alloc_node(ND_NULL);
     }
@@ -614,7 +630,7 @@ static Node *declaration() {
     type = declarator(type, &var_name);
     type = type_suffix(type);
 
-    if(is_typedef) {
+    if(sclass == TYPEDEF) {
         expect(";");
         push_scope(var_name)->type_def = type;
         return alloc_node(ND_NULL);
@@ -648,7 +664,7 @@ static Node *read_expr_stmt(void) { return new_unary(ND_EXPR_STMT, expr()); }
 static bool is_typename(void) {
     return match("void") || match("_Bool") || match("char") || match("short") ||
            match("int") || match("long") || match("struct") || match("enum") ||
-           match("typedef") || find_typedef(token);
+           match("typedef") || match("static") || find_typedef(token);
 }
 
 static Node *stmt() {

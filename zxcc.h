@@ -150,6 +150,7 @@ struct Function {
     Function *next;
     char *name;
     VarList *args;
+    bool is_static;
 
     Node *node;
     VarList *locals;

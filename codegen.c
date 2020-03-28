@@ -107,6 +107,18 @@ static void truncate(Type *ty) {
     printf("  push rax\n");
 }
 
+static void inc(Type *ty) {
+    printf("  pop rax\n");
+    printf("  add rax, %d\n", ty->ptr_to ? ty->ptr_to->size : 1);
+    printf("  push rax\n");
+}
+
+static void dec(Type *ty) {
+    printf("  pop rax\n");
+    printf("  sub rax, %d\n", ty->ptr_to ? ty->ptr_to->size : 1);
+    printf("  push rax\n");
+}
+
 // 抽象構文木の根ノードを受け取りスタックマシンのコードを生成する
 static void gen(Node *node) {
     int label_num;
@@ -143,6 +155,44 @@ static void gen(Node *node) {
             gen(node->rhs);       // 右辺: 数値をpush
             store(node->type);
             debug_printf("gen - ND_ASSIGN end");
+            return;
+        case ND_PRE_INC:
+            debug_printf("gen - ND_PRE_INC");
+            gen_lval(node->lhs);
+            printf("  push [rsp]\n");
+            load(node->type);
+            inc(node->type);
+            store(node->type);
+            debug_printf("gen - ND_PRE_INC end");
+            return;
+        case ND_PRE_DEC:
+            debug_printf("gen - ND_PRE_DEC");
+            gen_lval(node->lhs);
+            printf("  push [rsp]\n");
+            load(node->type);
+            dec(node->type);
+            store(node->type);
+            debug_printf("gen - ND_PRE_DEC end");
+            return;
+        case ND_POST_INC:
+            debug_printf("gen - ND_POST_INC");
+            gen_lval(node->lhs);
+            printf("  push [rsp]\n");
+            load(node->type);
+            inc(node->type);
+            store(node->type);
+            dec(node->type);
+            debug_printf("gen - ND_POST_INC end");
+            return;
+        case ND_POST_DEC:
+            debug_printf("gen - ND_POST_DEC");
+            gen_lval(node->lhs);
+            printf("  push [rsp]\n");
+            load(node->type);
+            dec(node->type);
+            store(node->type);
+            inc(node->type);
+            debug_printf("gen - ND_POST_DEC end");
             return;
         case ND_COMMA:
             debug_printf("gen - ND_COMMA");

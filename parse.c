@@ -900,12 +900,15 @@ static Node *cast() {
 }
 
 // unary = ("+" | "-" | "*" | "&")? cast
+//       | ("++" | "--") unary
 //       | postfix
 static Node *unary() {
     if(consume("+")) return cast();
     if(consume("-")) return new_binary(ND_SUB, new_node_num(0), cast());
     if(consume("*")) return new_unary(ND_DEREF, cast());
     if(consume("&")) return new_unary(ND_ADDR, cast());
+    if(consume("++")) return new_unary(ND_PRE_INC, unary());
+    if(consume("--")) return new_unary(ND_PRE_DEC, unary());
     return postfix();
 }
 
@@ -934,7 +937,7 @@ static Node *struct_ref(Node *lhs) {
     return node;
 }
 
-// postfix = primary ("[" expr "]" | "." ident | "->" ident)*
+// postfix = primary ("[" expr "]" | "." ident | "->" ident | "++" | "--")*
 static Node *postfix() {
     Node *node = primary();
 
@@ -956,6 +959,16 @@ static Node *postfix() {
             // x->yを(*x).yとして読み替える
             node = new_unary(ND_DEREF, node);
             node = struct_ref(node);
+            continue;
+        }
+
+        if(consume("++")) {
+            node = new_unary(ND_POST_INC, node);
+            continue;
+        }
+
+        if(consume("--")) {
+            node = new_unary(ND_POST_DEC, node);
             continue;
         }
 

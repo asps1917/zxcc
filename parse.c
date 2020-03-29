@@ -563,6 +563,13 @@ static VarList *params() {
         char *var_name = NULL;
         type = declarator(type, &var_name);
         type = type_suffix(type);
+
+        // 引数中の"T型の配列"を"T型へのポインタ"に変換する
+        // 例: *argv[] → **argv
+        if(type->ty == ARRAY) {
+            type = pointer_to(type->ptr_to);
+        }
+
         // identを以下のVarListに追加
         // * 関数定義内の引数リスト
         // * locals(ローカル変数リスト)

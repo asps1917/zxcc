@@ -38,6 +38,9 @@ static VarScope *var_scope;
 static TagScope *tag_scope;
 static int scope_depth;
 
+// switch文のパース中にswitchノードへのポインタを保持する変数
+static Node *current_switch;
+
 // ブロックスコープの開始処理
 static Scope *enter_scope(void) {
     Scope *sc = calloc(1, sizeof(Scope));
@@ -739,6 +742,9 @@ static Node *stmt() {
 // stmt = "return" expr ";"
 //      | "{" stmt* "}"
 //      | "if" "(" expr ")" stmt ("else" stmt)?
+//      | "switch" "(" expr ")" stmt
+//      | "case" num ":" stmt
+//      | "default" ":" stmt
 //      | "while" "(" expr ")" stmt
 //      | "for" "(" (expr? ";" | declaration) expr? ";" expr? ")" stmt
 //      | expr ";"
@@ -784,6 +790,44 @@ static Node *stmt2() {
         if(consume("else")) {
             node->els = stmt();
         }
+        return node;
+    }
+
+    if(consume("switch")) {
+        Node *node = alloc_node(ND_SWITCH);
+        expect("(");
+        node->cond = expr();
+        expect(")");
+
+        Node *sw = current_switch;
+        current_switch = node;
+        node->then = stmt();
+        current_switch = sw;
+        return node;
+    }
+
+    if(consume("case")) {
+        if(!current_switch) {
+            error("不正なcase句です");
+        }
+        int val = expect_number();
+        expect(":");
+
+        Node *node = new_unary(ND_CASE, stmt());
+        node->val = val;
+        node->case_next = current_switch->case_next;
+        current_switch->case_next = node;
+        return node;
+    }
+
+    if(consume("default")) {
+        if(!current_switch) {
+            error("不正なdefault句です");
+        }
+        expect(":");
+
+        Node *node = new_unary(ND_CASE, stmt());
+        current_switch->default_case = node;
         return node;
     }
 

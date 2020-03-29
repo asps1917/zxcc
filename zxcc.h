@@ -98,6 +98,8 @@ typedef enum {
     ND_IF,          // if
     ND_WHILE,       // while
     ND_FOR,         // for
+    ND_SWITCH,      // "switch"
+    ND_CASE,        // "case"
     ND_BLOCK,       // ブロック
     ND_BREAK,       // "break"
     ND_CONTINUE,    // "continue"
@@ -166,6 +168,12 @@ struct Node {
 
     // Goto or ラベル付きstatement
     char *label_name;
+
+    // Switch-case
+    Node *case_next;
+    Node *default_case;
+    int case_label;
+    int case_end_label;
 
     // ND_VAR用
     Var *var;

@@ -237,6 +237,7 @@ bool is_integer(Type *type);
 void add_type(Node *node);
 Type *func_type(Type *return_ty);
 Type *enum_type();
+Type *struct_type();
 int align_to(int n, int align);
 
 //

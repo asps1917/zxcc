@@ -5,6 +5,8 @@ typedef struct VarScope VarScope;
 struct VarScope {
     VarScope *next;
     char *name;
+    int depth;
+
     Var *var;
     Type *type_def;
     Type *enum_ty;
@@ -16,6 +18,7 @@ typedef struct TagScope TagScope;
 struct TagScope {
     TagScope *next;
     char *name;
+    int depth;
     Type *ty;
 };
 
@@ -33,12 +36,14 @@ static VarList *globals;
 static VarScope *var_scope;
 // 構造体タグ、enumタグのスコープ
 static TagScope *tag_scope;
+static int scope_depth;
 
 // ブロックスコープの開始処理
 static Scope *enter_scope(void) {
     Scope *sc = calloc(1, sizeof(Scope));
     sc->var_scope = var_scope;
     sc->tag_scope = tag_scope;
+    scope_depth++;
     return sc;
 }
 
@@ -46,6 +51,7 @@ static Scope *enter_scope(void) {
 static void leave_scope(Scope *sc) {
     var_scope = sc->var_scope;
     tag_scope = sc->tag_scope;
+    scope_depth--;
 }
 
 // 変数、typedefを名前で検索する。検索対象はローカル変数リスト→グローバル変数リストの順番。
@@ -75,6 +81,7 @@ static VarScope *push_scope(char *name) {
     VarScope *sc = calloc(1, sizeof(VarScope));
     sc->name = name;
     sc->next = var_scope;
+    sc->depth = scope_depth;
     var_scope = sc;
     return sc;
 }
@@ -419,12 +426,12 @@ static void push_tag_scope(Token *tok, Type *ty) {
     TagScope *sc = calloc(1, sizeof(TagScope));
     sc->next = tag_scope;
     sc->name = strndup(tok->str, tok->len);
+    sc->depth = scope_depth;
     sc->ty = ty;
     tag_scope = sc;
 }
 
-// struct-decl = "struct" ident
-//             | "struct" ident? "{" struct-member "}"
+// struct-decl = "struct" ident? ("{" struct-member "}")?
 static Type *struct_decl(void) {
     // 構造体タグの読み出し
     expect("struct");
@@ -432,7 +439,9 @@ static Type *struct_decl(void) {
     if(tag && !match("{")) {
         TagScope *sc = find_tag(tag);
         if(!sc) {
-            error("未定義の構造体の型です");
+            Type *ty = struct_type();
+            push_tag_scope(tag, ty);
+            return ty;
         }
         if(sc->ty->ty != STRUCT) {
             error("構造体タグではありません");
@@ -440,7 +449,29 @@ static Type *struct_decl(void) {
         return sc->ty;
     }
 
-    expect("{");
+    if(!consume("{")) {
+        return struct_type();
+    }
+
+    Type *ty;
+    TagScope *sc = NULL;
+    if(tag) {
+        sc = find_tag(tag);
+    }
+
+    if(sc && sc->depth == scope_depth) {
+        // 構造体の再定義
+        if(sc->ty->ty != STRUCT) {
+            error("構造体タグではありません");
+        }
+        ty = sc->ty;
+    } else {
+        // 構造体型を不完全な型として登録する
+        ty = struct_type();
+        if(tag) {
+            push_tag_scope(tag, ty);
+        }
+    }
 
     // 構造体メンバの読み出し
     Member head = {};
@@ -451,8 +482,6 @@ static Type *struct_decl(void) {
         cur = cur->next;
     }
 
-    Type *ty = calloc(1, sizeof(Type));
-    ty->ty = STRUCT;
     ty->members = head.next;
 
     // 構造体メンバへのoffset割り当て
@@ -471,10 +500,7 @@ static Type *struct_decl(void) {
     }
     ty->size = align_to(offset, ty->align);
 
-    // 構造体の型を登録
-    if(tag) {
-        push_tag_scope(tag, ty);
-    }
+    ty->is_incomplete = false;
     return ty;
 }
 

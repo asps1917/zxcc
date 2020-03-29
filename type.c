@@ -45,7 +45,13 @@ Type *func_type(Type *return_ty) {
     return ty;
 }
 
-Type *enum_type(void) { return new_type(ENUM, 4, 4); }
+Type *enum_type() { return new_type(ENUM, 4, 4); }
+
+Type *struct_type() {
+    Type *ty = new_type(STRUCT, 0, 1);
+    ty->is_incomplete = true;
+    return ty;
+}
 
 // 引数nodeと子ノードに対して、そのnodeを評価した結果適用される型をセットする。
 // 例: "1 + 1"を表すnodeには整数型がセットされる。
@@ -115,15 +121,20 @@ void add_type(Node *node) {
                 node->type = pointer_to(node->lhs->type);
             }
             return;
-        case ND_DEREF:
+        case ND_DEREF: {
             if(!node->lhs->type->ptr_to) {
                 error("無効なデリファレンスです");
             }
-            node->type = node->lhs->type->ptr_to;
-            if(node->type->ty == VOID) {
+            Type *ty = node->lhs->type->ptr_to;
+            if(ty->ty == VOID) {
                 error("void型へのポインタに対するデリファレンスです");
             }
+            if(ty->ty == STRUCT && ty->is_incomplete) {
+                error("不完全な構造体型です");
+            }
+            node->type = ty;
             return;
+        }
         case ND_STMT_EXPR: {
             Node *last = node->block;
             while(last->next) {

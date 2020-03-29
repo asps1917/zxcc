@@ -459,6 +459,13 @@ static void gen(Node *node) {
             }
             printf("  jmp .Lcontinue%03d\n", contseq);
             return;
+        case ND_GOTO:
+            printf("  jmp .Llabel.%s.%s\n", func_name, node->label_name);
+            return;
+        case ND_LABEL:
+            printf(".Llabel.%s.%s:\n", func_name, node->label_name);
+            gen(node->lhs);
+            return;
         case ND_FUNCCALL:
             debug_printf("gen - ND_FUNCCALL");
             int args_count = 0;

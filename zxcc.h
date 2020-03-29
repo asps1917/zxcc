@@ -101,6 +101,8 @@ typedef enum {
     ND_BLOCK,       // ブロック
     ND_BREAK,       // "break"
     ND_CONTINUE,    // "continue"
+    ND_GOTO,        // "goto"
+    ND_LABEL,       // ラベル付きstatement
     ND_FUNCCALL,    // 関数呼び出し
     ND_ADDR,        // 単項 &
     ND_DEREF,       // 単項 *
@@ -161,6 +163,9 @@ struct Node {
     // 関数呼び出し
     char *func_name;
     Node *args;
+
+    // Goto or ラベル付きstatement
+    char *label_name;
 
     // ND_VAR用
     Var *var;

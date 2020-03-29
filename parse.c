@@ -745,6 +745,8 @@ static Node *stmt() {
 //      | declaration
 //      | "break" ";"
 //      | "continue" ";"
+//      | "goto" ident ";"
+//      | ident ":" stmt
 static Node *stmt2() {
     Node *node;
 
@@ -831,6 +833,23 @@ static Node *stmt2() {
     if(consume("continue")) {
         expect(";");
         return alloc_node(ND_CONTINUE);
+    }
+
+    if(consume("goto")) {
+        Node *node = alloc_node(ND_GOTO);
+        node->label_name = expect_ident();
+        expect(";");
+        return node;
+    }
+
+    Token *tok;
+    if(tok = consume_ident()) {
+        if(consume(":")) {
+            Node *node = new_unary(ND_LABEL, stmt());
+            node->label_name = strndup(tok->str, tok->len);
+            return node;
+        }
+        token = tok;
     }
 
     // 変数定義

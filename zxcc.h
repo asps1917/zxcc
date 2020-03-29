@@ -145,7 +145,7 @@ struct Node {
     Type *type;     // 型
     Node *lhs;      // 左辺
     Node *rhs;      // 右辺
-    int val;        // kindがND_NUMの場合のみ使う
+    long val;       // kindがND_NUMの場合のみ使う
 
     // if, while, for文用
     Node *cond;  // 条件式

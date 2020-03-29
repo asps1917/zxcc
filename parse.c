@@ -198,6 +198,7 @@ static Node * bitor ();
 static Node *bitxor();
 static Node *equality();
 static Node *relational();
+static Node *shift();
 static Node *add();
 static Node *mul();
 static Node *cast();
@@ -917,7 +918,7 @@ static Node *expr() {
 }
 
 // assign    = logor (assign-op assign)?
-// assign-op = "=" | "+=" | "-=" | "*=" | "/="
+// assign-op = "=" | "+=" | "-=" | "*=" | "/=" | "<<=" | ">>="
 static Node *assign() {
     Node *node = logor();
 
@@ -929,6 +930,12 @@ static Node *assign() {
     }
     if(consume("/=")) {
         return new_binary(ND_DIV_EQ, node, assign());
+    }
+    if(consume("<<=")) {
+        return new_binary(ND_SHL_EQ, node, assign());
+    }
+    if(consume(">>=")) {
+        return new_binary(ND_SHR_EQ, node, assign());
     }
 
     if(consume("+=")) {
@@ -1010,21 +1017,36 @@ static Node *equality() {
     }
 }
 
-// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+// relational = shift ("<" shift | "<=" shift | ">" shift | ">=" shift)*
 static Node *relational() {
-    Node *node = add();
+    Node *node = shift();
 
     for(;;) {
         if(consume("<"))
-            node = new_binary(ND_LT, node, add());
+            node = new_binary(ND_LT, node, shift());
         else if(consume("<="))
-            node = new_binary(ND_LE, node, add());
+            node = new_binary(ND_LE, node, shift());
         else if(consume(">"))
-            node = new_binary(ND_LT, add(), node);
+            node = new_binary(ND_LT, shift(), node);
         else if(consume(">="))
-            node = new_binary(ND_LE, add(), node);
+            node = new_binary(ND_LE, shift(), node);
         else
             return node;
+    }
+}
+
+// shift = add ("<<" add | ">>" add)*
+static Node *shift() {
+    Node *node = add();
+
+    for(;;) {
+        if(consume("<<")) {
+            node = new_binary(ND_SHL, node, add());
+        } else if(consume(">>")) {
+            node = new_binary(ND_SHR, node, add());
+        } else {
+            return node;
+        }
     }
 }
 

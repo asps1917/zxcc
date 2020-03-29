@@ -328,6 +328,13 @@ Token *tokenize() {
             continue;
         }
 
+        // 3文字の演算子
+        if(strncmp("<<=", p, 3) == 0 || strncmp(">>=", p, 3) == 0) {
+            cur = new_token(TK_RESERVED, cur, p, 3);
+            p += 3;
+            continue;
+        }
+
         // 2文字の演算子
         if(strncmp("<=", p, 2) == 0 || strncmp(">=", p, 2) == 0 ||
            strncmp("==", p, 2) == 0 || strncmp("!=", p, 2) == 0 ||
@@ -335,7 +342,8 @@ Token *tokenize() {
            strncmp("--", p, 2) == 0 || strncmp("+=", p, 2) == 0 ||
            strncmp("-=", p, 2) == 0 || strncmp("*=", p, 2) == 0 ||
            strncmp("/=", p, 2) == 0 || strncmp("&&", p, 2) == 0 ||
-           strncmp("||", p, 2) == 0) {
+           strncmp("||", p, 2) == 0 || strncmp("<<", p, 2) == 0 ||
+           strncmp(">>", p, 2) == 0) {
             cur = new_token(TK_RESERVED, cur, p, 2);
             p += 2;
             continue;

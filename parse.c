@@ -744,6 +744,7 @@ static Node *stmt() {
 //      | expr ";"
 //      | declaration
 //      | "break" ";"
+//      | "continue" ";"
 static Node *stmt2() {
     Node *node;
 
@@ -825,6 +826,11 @@ static Node *stmt2() {
     if(consume("break")) {
         expect(";");
         return alloc_node(ND_BREAK);
+    }
+
+    if(consume("continue")) {
+        expect(";");
+        return alloc_node(ND_CONTINUE);
     }
 
     // 変数定義

@@ -3,6 +3,7 @@
 // labelの通し番号
 int label_seq_num;
 static int brkseq;
+static int contseq;
 static char *func_name;
 
 static char *regs_for_args_8[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
@@ -389,18 +390,20 @@ static void gen(Node *node) {
             debug_printf("gen - ND_WHILE");
             label_num = label_seq_num++;
             int brk = brkseq;
-            brkseq = label_num;
+            int cont = contseq;
+            brkseq = contseq = label_num;
 
-            printf(".Lbegin%03d:\n", label_num);
+            printf(".Lcontinue%03d:\n", label_num);
             gen(node->cond);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
             printf("  je  .Lbreak%03d\n", label_num);
             gen(node->then);
-            printf("  jmp .Lbegin%03d\n", label_num);
+            printf("  jmp .Lcontinue%03d\n", label_num);
             printf(".Lbreak%03d:\n", label_num);
 
             brkseq = brk;
+            contseq = cont;
             debug_printf("gen - ND_WHILE end");
             return;
         }
@@ -408,7 +411,8 @@ static void gen(Node *node) {
             debug_printf("gen - ND_FOR");
             label_num = label_seq_num++;
             int brk = brkseq;
-            brkseq = label_num;
+            int cont = contseq;
+            brkseq = contseq = label_num;
 
             if(node->init) {
                 gen(node->init);
@@ -423,6 +427,7 @@ static void gen(Node *node) {
             }
 
             gen(node->then);
+            printf(".Lcontinue%03d:\n", label_num);
             if(node->post) {
                 gen(node->post);
             }
@@ -430,6 +435,7 @@ static void gen(Node *node) {
             printf(".Lbreak%03d:\n", label_num);
 
             brkseq = brk;
+            contseq = cont;
             debug_printf("gen - ND_FOR end");
             return;
         }
@@ -446,6 +452,12 @@ static void gen(Node *node) {
                 error("不正なbreakです");
             }
             printf("  jmp .Lbreak%03d\n", brkseq);
+            return;
+        case ND_CONTINUE:
+            if(contseq == 0) {
+                error("不正なcontinueです");
+            }
+            printf("  jmp .Lcontinue%03d\n", contseq);
             return;
         case ND_FUNCCALL:
             debug_printf("gen - ND_FUNCCALL");

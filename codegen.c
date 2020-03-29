@@ -2,6 +2,7 @@
 
 // labelの通し番号
 int label_seq_num;
+static int brkseq;
 static char *func_name;
 
 static char *regs_for_args_8[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
@@ -384,22 +385,31 @@ static void gen(Node *node) {
             }
             debug_printf("gen - ND_IF end");
             return;
-        case ND_WHILE:
+        case ND_WHILE: {
             debug_printf("gen - ND_WHILE");
             label_num = label_seq_num++;
+            int brk = brkseq;
+            brkseq = label_num;
+
             printf(".Lbegin%03d:\n", label_num);
             gen(node->cond);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
-            printf("  je  .Lend%03d\n", label_num);
+            printf("  je  .Lbreak%03d\n", label_num);
             gen(node->then);
             printf("  jmp .Lbegin%03d\n", label_num);
-            printf(".Lend%03d:\n", label_num);
+            printf(".Lbreak%03d:\n", label_num);
+
+            brkseq = brk;
             debug_printf("gen - ND_WHILE end");
             return;
-        case ND_FOR:
+        }
+        case ND_FOR: {
             debug_printf("gen - ND_FOR");
             label_num = label_seq_num++;
+            int brk = brkseq;
+            brkseq = label_num;
+
             if(node->init) {
                 gen(node->init);
             }
@@ -409,7 +419,7 @@ static void gen(Node *node) {
                 gen(node->cond);
                 printf("  pop rax\n");
                 printf("  cmp rax, 0\n");
-                printf("  je  .Lend%03d\n", label_num);
+                printf("  je  .Lbreak%03d\n", label_num);
             }
 
             gen(node->then);
@@ -417,9 +427,12 @@ static void gen(Node *node) {
                 gen(node->post);
             }
             printf("  jmp .Lbegin%03d\n", label_num);
-            printf(".Lend%03d:\n", label_num);
+            printf(".Lbreak%03d:\n", label_num);
+
+            brkseq = brk;
             debug_printf("gen - ND_FOR end");
             return;
+        }
         case ND_BLOCK:
         case ND_STMT_EXPR:
             debug_printf("gen - ND_BLOCK, ND_STMT_EXPR");
@@ -427,6 +440,12 @@ static void gen(Node *node) {
                 gen(cur);
             }
             debug_printf("gen - ND_BLOCK, ND_STMT_EXPR end");
+            return;
+        case ND_BREAK:
+            if(brkseq == 0) {
+                error("不正なbreakです");
+            }
+            printf("  jmp .Lbreak%03d\n", brkseq);
             return;
         case ND_FUNCCALL:
             debug_printf("gen - ND_FUNCCALL");

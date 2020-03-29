@@ -743,6 +743,7 @@ static Node *stmt() {
 //      | "for" "(" (expr? ";" | declaration) expr? ";" expr? ")" stmt
 //      | expr ";"
 //      | declaration
+//      | "break" ";"
 static Node *stmt2() {
     Node *node;
 
@@ -819,6 +820,11 @@ static Node *stmt2() {
         node->then = stmt();
         leave_scope(sc);
         return node;
+    }
+
+    if(consume("break")) {
+        expect(";");
+        return alloc_node(ND_BREAK);
     }
 
     // 変数定義

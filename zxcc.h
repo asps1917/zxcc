@@ -99,6 +99,7 @@ typedef enum {
     ND_WHILE,       // while
     ND_FOR,         // for
     ND_BLOCK,       // ブロック
+    ND_BREAK,       // "break"
     ND_FUNCCALL,    // 関数呼び出し
     ND_ADDR,        // 単項 &
     ND_DEREF,       // 単項 *

@@ -383,16 +383,29 @@ static Type *abstract_declarator(Type *ty) {
     return type_suffix(ty);
 }
 
-// type-suffix = ("[" num "]" type-suffix)?
+// type-suffix = ("[" num? "]" type-suffix)?
 // 変数宣言の型名のsuffix([])を読み取る
 static Type *type_suffix(Type *ty) {
     if(!consume("[")) {
         return ty;
     }
-    int sz = expect_number();
-    expect("]");
+
+    int sz = 0;
+    bool is_incomplete = true;
+    if(!consume("]")) {
+        sz = expect_number();
+        is_incomplete = false;
+        expect("]");
+    }
+
     ty = type_suffix(ty);
-    return array_of(ty, sz);
+    if(ty->is_incomplete) {
+        error("不完全な型です");
+    }
+
+    ty = array_of(ty, sz);
+    ty->is_incomplete = is_incomplete;
+    return ty;
 }
 
 // type-name = basetype abstract-declarator type-suffix
@@ -445,6 +458,9 @@ static Type *struct_decl(void) {
     // 構造体メンバへのoffset割り当て
     int offset = 0;
     for(Member *mem = ty->members; mem; mem = mem->next) {
+        if(mem->ty->is_incomplete) {
+            error("構造体メンバが不完全です");
+        }
         offset = align_to(offset, mem->ty->align);
         mem->offset = offset;
         offset += mem->ty->size;
@@ -522,6 +538,7 @@ static Type *enum_specifier() {
 // struct-member = basetype declarator type-suffix ";"
 static Member *struct_member(void) {
     Type *ty = basetype(NULL);
+    Token *tok = token;
     char *name = NULL;
     ty = declarator(ty, &name);
     ty = type_suffix(ty);
@@ -530,6 +547,7 @@ static Member *struct_member(void) {
     Member *mem = calloc(1, sizeof(Member));
     mem->name = name;
     mem->ty = ty;
+    mem->tok = tok;
     return mem;
 }
 
@@ -617,6 +635,9 @@ static void global_var() {
     if(sclass == TYPEDEF) {
         push_scope(strndup(var_name, strlen(var_name)))->type_def = type;
     } else {
+        if(type->is_incomplete) {
+            error("不完全な型です");
+        }
         // global変数に定義した変数を追加
         new_gvar(strndup(var_name, strlen(var_name)), type, true);
     }
@@ -647,6 +668,9 @@ static Node *declaration() {
 
     // localsに定義した変数を追加
     Var *lvar = new_lvar(strndup(var_name, strlen(var_name)), type);
+    if(type->is_incomplete) {
+        error("不完全な型です");
+    }
 
     if(consume(";")) {
         // 関数宣言のみ
@@ -1121,6 +1145,9 @@ static Node *primary() {
         if(consume("(")) {
             if(is_typename()) {
                 Type *ty = type_name();
+                if(ty->is_incomplete) {
+                    error("不完全な型です");
+                }
                 expect(")");
                 return new_node_num(ty->size);
             }
@@ -1130,6 +1157,9 @@ static Node *primary() {
         // 演算対象となる子ノードの型サイズを出力
         Node *node = unary();
         add_type(node);
+        if(node->type->is_incomplete) {
+            error("不完全な型です");
+        }
         return new_node_num(node->type->size);
     }
 

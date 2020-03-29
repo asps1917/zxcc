@@ -205,8 +205,10 @@ typedef enum {
 // 型を表す型
 struct Type {
     TypeKind ty;
-    int size;   // sizeofの返り値
-    int align;  // アライメント
+    int size;            // sizeofの返り値
+    int align;           // アライメント
+    bool is_incomplete;  // 不完全な型か
+
     struct Type *ptr_to;
     int array_len;    // 配列の要素数
     Member *members;  // 構造体
@@ -217,6 +219,7 @@ struct Type {
 struct Member {
     Member *next;
     Type *ty;
+    Token *tok;
     char *name;
     int offset;
 };

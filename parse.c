@@ -699,6 +699,13 @@ static Initializer *new_init_label(Initializer *cur, char *label) {
     return init;
 }
 
+static Initializer *new_init_zero(Initializer *cur, int nbytes) {
+    for(int i = 0; i < nbytes; i++) {
+        cur = new_init_val(cur, 1, 0);
+    }
+    return cur;
+}
+
 static Initializer *gvar_init_string(char *p, int len) {
     Initializer head = {};
     Initializer *cur = &head;
@@ -708,9 +715,63 @@ static Initializer *gvar_init_string(char *p, int len) {
     return head.next;
 }
 
+static Initializer *emit_struct_padding(Initializer *cur, Type *parent,
+                                        Member *mem) {
+    int start = mem->offset + mem->ty->size;
+    int end = mem->next ? mem->next->offset : parent->size;
+    return new_init_zero(cur, end - start);
+}
+
 // gvar-initializer2 = assign
+//                  | "{" (gvar-initializer2 ("," gvar-initializer2)* ","?)? "}"
 static Initializer *gvar_initializer2(Initializer *cur, Type *ty) {
     Token *tok = token;
+
+    if(ty->ty == ARRAY) {
+        expect("{");
+        int i = 0;
+
+        if(!match("}")) {
+            do {
+                cur = gvar_initializer2(cur, ty->ptr_to);
+                i++;
+            } while(!peek_end() && consume(","));
+        }
+        expect_end();
+
+        // 残りの配列要素をゼロで初期化する
+        if(i < ty->array_len) {
+            cur = new_init_zero(cur, ty->ptr_to->size * (ty->array_len - i));
+        }
+
+        if(ty->is_incomplete) {
+            ty->size = ty->ptr_to->size * i;
+            ty->array_len = i;
+            ty->is_incomplete = false;
+        }
+        return cur;
+    }
+
+    if(ty->ty == STRUCT) {
+        expect("{");
+        Member *mem = ty->members;
+
+        if(!match("}")) {
+            do {
+                cur = gvar_initializer2(cur, mem->ty);
+                cur = emit_struct_padding(cur, ty, mem);
+                mem = mem->next;
+            } while(!peek_end() && consume(","));
+        }
+        expect_end();
+
+        // 残りの構造体の要素をゼロで初期化する
+        if(mem) {
+            cur = new_init_zero(cur, ty->size - mem->offset);
+        }
+        return cur;
+    }
+
     Node *expr = conditional();
 
     if(expr->kind == ND_ADDR) {

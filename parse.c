@@ -207,6 +207,7 @@ static Node *bitxor();
 static Node *equality();
 static Node *relational();
 static Node *shift();
+static Node *new_add(Node *lhs, Node *rhs);
 static Node *add();
 static Node *mul();
 static Node *cast();
@@ -526,6 +527,19 @@ static bool consume_end() {
     return false;
 }
 
+static bool peek_end() {
+    Token *tok = token;
+    bool ret = consume("}") || (consume(",") && consume("}"));
+    token = tok;
+    return ret;
+}
+
+static void expect_end() {
+    if(!consume_end()) {
+        expect("}");
+    }
+}
+
 // enum-specifier = "enum" ident
 //                | "enum" ident? "{" enum-list? "}"
 //
@@ -689,7 +703,61 @@ static void global_var() {
     }
 }
 
-// declaration = basetype declarator type-suffix ("=" expr)? ";"
+typedef struct Designator Designator;
+struct Designator {
+    Designator *next;
+    int idx;
+};
+
+// 配列へのアクセスに相当するノードを生成する。
+// 例: var=x, desg=3,4の場合、x[3][4]に相当するノードをこの関数は返す
+static Node *new_desg_node2(Var *var, Designator *desg) {
+    if(!desg) {
+        return new_var_node(var);
+    }
+
+    Node *node = new_desg_node2(var, desg->next);
+    node = new_add(node, new_node_num(desg->idx));
+    return new_unary(ND_DEREF, node);
+}
+
+static Node *new_desg_node(Var *var, Designator *desg, Node *rhs) {
+    Node *lhs = new_desg_node2(var, desg);
+    Node *node = new_binary(ND_ASSIGN, lhs, rhs);
+    return new_unary(ND_EXPR_STMT, node);
+}
+
+// lvar-initializer2 = assign
+//                   | "{" lvar-initializer2 ("," lvar-initializer2)* ","? "}"
+static Node *lvar_initializer2(Node *cur, Var *var, Type *ty,
+                               Designator *desg) {
+    if(ty->ty == ARRAY) {
+        expect("{");
+        int i = 0;
+
+        do {
+            Designator desg2 = {desg, i++};
+            cur = lvar_initializer2(cur, var, ty->ptr_to, &desg2);
+        } while(!peek_end() && consume(","));
+
+        expect_end();
+        return cur;
+    }
+
+    cur->next = new_desg_node(var, desg, assign());
+    return cur->next;
+}
+
+static Node *lvar_initializer(Var *var) {
+    Node head = {};
+    lvar_initializer2(&head, var, var->type, NULL);
+
+    Node *node = alloc_node(ND_BLOCK);
+    node->block = head.next;
+    return node;
+}
+
+// declaration = basetype declarator type-suffix ("=" lvar-initializer)? ";"
 //             | basetype ";"
 static Node *declaration() {
     StorageClass sclass;
@@ -725,11 +793,9 @@ static Node *declaration() {
 
     // 関数宣言 + 代入式
     expect("=");
-    Node *node_expr = expr();
+    Node *node = lvar_initializer(lvar);
     expect(";");
-    Node *node_var = new_var_node(lvar);
-    Node *node_assign = new_binary(ND_ASSIGN, node_var, node_expr);
-    return new_unary(ND_EXPR_STMT, node_assign);
+    return node;
 }
 
 static Node *read_expr_stmt(void) { return new_unary(ND_EXPR_STMT, expr()); }

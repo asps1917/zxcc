@@ -710,7 +710,8 @@ static void global_var() {
 typedef struct Designator Designator;
 struct Designator {
     Designator *next;
-    int idx;
+    int idx;      // array
+    Member *mem;  // struct
 };
 
 // 配列へのアクセスに相当するノードを生成する。
@@ -721,6 +722,13 @@ static Node *new_desg_node2(Var *var, Designator *desg) {
     }
 
     Node *node = new_desg_node2(var, desg->next);
+
+    if(desg->mem) {
+        node = new_unary(ND_MEMBER, node);
+        node->member = desg->mem;
+        return node;
+    }
+
     node = new_add(node, new_node_num(desg->idx));
     return new_unary(ND_DEREF, node);
 }
@@ -803,6 +811,27 @@ static Node *lvar_initializer2(Node *cur, Var *var, Type *ty,
             ty->is_incomplete = false;
         }
 
+        return cur;
+    }
+
+    if(ty->ty == STRUCT) {
+        expect("{");
+        Member *mem = ty->members;
+
+        if(!match("}")) {
+            do {
+                Designator desg2 = {desg, 0, mem};
+                cur = lvar_initializer2(cur, var, mem->ty, &desg2);
+                mem = mem->next;
+            } while(!peek_end() && consume(","));
+        }
+        expect_end();
+
+        // 余った構造体メンバにゼロをセットする
+        for(; mem; mem = mem->next) {
+            Designator desg2 = {desg, 0, mem};
+            cur = lvar_init_zero(cur, var, mem->ty, &desg2);
+        }
         return cur;
     }
 

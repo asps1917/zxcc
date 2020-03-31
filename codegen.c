@@ -249,6 +249,19 @@ static void gen(Node *node) {
             store(node->type);
             debug_printf("gen - ND_ASSIGN end");
             return;
+        case ND_TERNARY: {
+            int seq = label_seq_num++;
+            gen(node->cond);
+            printf("  pop rax\n");
+            printf("  cmp rax, 0\n");
+            printf("  je  .Lelse%d\n", seq);
+            gen(node->then);
+            printf("  jmp .Lend%d\n", seq);
+            printf(".Lelse%d:\n", seq);
+            gen(node->els);
+            printf(".Lend%d:\n", seq);
+            return;
+        }
         case ND_PRE_INC:
             debug_printf("gen - ND_PRE_INC");
             gen_lval(node->lhs);

@@ -742,8 +742,32 @@ static Node *lvar_init_zero(Node *cur, Var *var, Type *ty, Designator *desg) {
 
 // lvar-initializer2 = assign
 // | "{" (lvar-initializer2 ("," lvar-initializer2)* ","?)? "}"
+// - 初期化子リストが配列より短い場合、余った要素は0で初期化される
+// - char配列は文字列リテラルによって初期化可能
 static Node *lvar_initializer2(Node *cur, Var *var, Type *ty,
                                Designator *desg) {
+    if(ty->ty == ARRAY && ty->ptr_to->ty == CHAR && token->kind == TK_STR) {
+        // char配列を文字列リテラルで初期化する
+        Token *tok = token;
+        token = token->next;
+
+        int len =
+            (ty->array_len < tok->cont_len) ? ty->array_len : tok->cont_len;
+
+        for(int i = 0; i < len; i++) {
+            Designator desg2 = {desg, i};
+            Node *rhs = new_node_num(tok->contents[i]);
+            cur->next = new_desg_node(var, &desg2, rhs);
+            cur = cur->next;
+        }
+
+        for(int i = len; i < ty->array_len; i++) {
+            Designator desg2 = {desg, i};
+            cur = lvar_init_zero(cur, var, ty->ptr_to, &desg2);
+        }
+        return cur;
+    }
+
     if(ty->ty == ARRAY) {
         expect("{");
         int i = 0;

@@ -727,20 +727,41 @@ static Node *new_desg_node(Var *var, Designator *desg, Node *rhs) {
     return new_unary(ND_EXPR_STMT, node);
 }
 
+static Node *lvar_init_zero(Node *cur, Var *var, Type *ty, Designator *desg) {
+    if(ty->ty == ARRAY) {
+        for(int i = 0; i < ty->array_len; i++) {
+            Designator desg2 = {desg, i++};
+            cur = lvar_init_zero(cur, var, ty->ptr_to, &desg2);
+        }
+        return cur;
+    }
+
+    cur->next = new_desg_node(var, desg, new_node_num(0));
+    return cur->next;
+}
+
 // lvar-initializer2 = assign
-//                   | "{" lvar-initializer2 ("," lvar-initializer2)* ","? "}"
+// | "{" (lvar-initializer2 ("," lvar-initializer2)* ","?)? "}"
 static Node *lvar_initializer2(Node *cur, Var *var, Type *ty,
                                Designator *desg) {
     if(ty->ty == ARRAY) {
         expect("{");
         int i = 0;
 
-        do {
-            Designator desg2 = {desg, i++};
-            cur = lvar_initializer2(cur, var, ty->ptr_to, &desg2);
-        } while(!peek_end() && consume(","));
-
+        if(!match("}")) {
+            do {
+                Designator desg2 = {desg, i++};
+                cur = lvar_initializer2(cur, var, ty->ptr_to, &desg2);
+            } while(!peek_end() && consume(","));
+        }
         expect_end();
+
+        // 余った配列要素にゼロをセットする
+        while(i < ty->array_len) {
+            Designator desg2 = {desg, i++};
+            cur = lvar_init_zero(cur, var, ty->ptr_to, &desg2);
+        }
+
         return cur;
     }
 

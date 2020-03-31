@@ -621,14 +621,20 @@ static void gen_data_seg(Program *prog) {
         Var *gvar = vlist->var;
         printf("%s:\n", gvar->name);
 
-        if(gvar->contents) {
-            // 文字列リテラル
-            for(int i = 0; i < gvar->cont_len; i++) {
-                printf("  .byte %d\n", gvar->contents[i]);
-            }
-        } else {
+        if(!gvar->initializer) {
             // グローバル変数
             printf("  .zero %d\n", gvar->type->size);
+            continue;
+        }
+
+        for(Initializer *init = gvar->initializer; init; init = init->next) {
+            if(init->label) {
+                printf("  .quad %s\n", init->label);
+            } else if(init->sz == 1) {
+                printf("  .byte %ld\n", init->val);
+            } else {
+                printf("  .%dbyte %ld\n", init->sz, init->val);
+            }
         }
     }
 }

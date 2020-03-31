@@ -11,6 +11,7 @@
 
 typedef struct Type Type;
 typedef struct Member Member;
+typedef struct Initializer Initializer;
 
 //
 // tokenize.c
@@ -133,8 +134,7 @@ struct Var {
     int offset;  // RBPからのオフセット
 
     // グローバル変数
-    char *contents;
-    int cont_len;
+    Initializer *initializer;
 };
 
 typedef struct VarList VarList;
@@ -182,6 +182,20 @@ struct Node {
 
     // ND_VAR用
     Var *var;
+};
+
+// グローバル変数の初期化子。グローバル変数は以下の要素によって初期化可能
+// - 定数式
+// - 他のグローバル変数へのポインタ
+struct Initializer {
+    Initializer *next;
+
+    // 定数式
+    int sz;
+    long val;
+
+    // 他のグローバル変数へのポインタ
+    char *label;
 };
 
 typedef struct Function Function;

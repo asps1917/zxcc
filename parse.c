@@ -196,6 +196,7 @@ static Node *declaration();
 static Node *stmt();
 static Node *stmt2();
 static Node *expr();
+static long eval(Node *node);
 static long const_expr();
 static Node *assign();
 static Node *conditional();
@@ -683,28 +684,81 @@ static Function *function() {
     return func;
 }
 
-// global-var = basetype declarator type-suffix ";"
+static Initializer *new_init_val(Initializer *cur, int sz, int val) {
+    Initializer *init = calloc(1, sizeof(Initializer));
+    init->sz = sz;
+    init->val = val;
+    cur->next = init;
+    return init;
+}
+
+static Initializer *new_init_label(Initializer *cur, char *label) {
+    Initializer *init = calloc(1, sizeof(Initializer));
+    init->label = label;
+    cur->next = init;
+    return init;
+}
+
+static Initializer *gvar_init_string(char *p, int len) {
+    Initializer head = {};
+    Initializer *cur = &head;
+    for(int i = 0; i < len; i++) {
+        cur = new_init_val(cur, 1, p[i]);
+    }
+    return head.next;
+}
+
+// gvar-initializer2 = assign
+static Initializer *gvar_initializer2(Initializer *cur, Type *ty) {
+    Token *tok = token;
+    Node *expr = conditional();
+
+    if(expr->kind == ND_ADDR) {
+        if(expr->lhs->kind != ND_VAR) {
+            error("無効な初期化子です");
+        }
+        return new_init_label(cur, expr->lhs->var->name);
+    }
+
+    if(expr->kind == ND_VAR && expr->var->type->ty == ARRAY) {
+        return new_init_label(cur, expr->var->name);
+    }
+
+    return new_init_val(cur, ty->size, eval(expr));
+}
+
+static Initializer *gvar_initializer(Type *ty) {
+    Initializer head = {};
+    gvar_initializer2(&head, ty);
+    return head.next;
+}
+
+// global-var = basetype declarator type-suffix ("=" gvar-initializer)? ";"
 static void global_var() {
     StorageClass sclass;
     Type *type = basetype(&sclass);
     char *var_name = NULL;
     type = declarator(type, &var_name);
     type = type_suffix(type);
-    expect(";");
-
-    if(type->is_incomplete) {
-        error("不完全な型です");
-    }
 
     if(sclass == TYPEDEF) {
+        expect(";");
         push_scope(strndup(var_name, strlen(var_name)))->type_def = type;
-    } else {
+        return;
+    }
+
+    Var *var = new_gvar(strndup(var_name, strlen(var_name)), type, true);
+
+    if(!consume("=")) {
         if(type->is_incomplete) {
             error("不完全な型です");
         }
-        // global変数に定義した変数を追加
-        new_gvar(strndup(var_name, strlen(var_name)), type, true);
+        expect(";");
+        return;
     }
+
+    var->initializer = gvar_initializer(type);
+    expect(";");
 }
 
 typedef struct Designator Designator;
@@ -1570,8 +1624,7 @@ static Node *primary() {
         // 文字列リテラルをグローバル変数に追加する
         Var *gvar =
             new_gvar(new_label(), array_of(char_type, tok->cont_len), true);
-        gvar->contents = tok->contents;
-        gvar->cont_len = tok->cont_len;
+        gvar->initializer = gvar_init_string(tok->contents, tok->cont_len);
         return new_var_node(gvar);
     }
 

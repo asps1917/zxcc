@@ -162,6 +162,12 @@ static Node *new_node_num(int val) {
     return node;
 }
 
+static Node *new_var_node(Var *var) {
+    Node *node = alloc_node(ND_VAR);
+    node->var = var;
+    return node;
+}
+
 // 文字列リテラル用のラベルを生成する
 static char *new_label(void) {
     static int cnt = 0;
@@ -721,8 +727,7 @@ static Node *declaration() {
     expect("=");
     Node *node_expr = expr();
     expect(";");
-    Node *node_var = alloc_node(ND_VAR);
-    node_var->var = lvar;
+    Node *node_var = new_var_node(lvar);
     Node *node_assign = new_binary(ND_ASSIGN, node_var, node_expr);
     return new_unary(ND_EXPR_STMT, node_assign);
 }
@@ -1392,9 +1397,7 @@ static Node *primary() {
 
         if(sc) {
             if(sc->var) {
-                node = alloc_node(ND_VAR);
-                node->var = sc->var;
-                return node;
+                return new_var_node(sc->var);
             }
             if(sc->enum_ty) {
                 return new_node_num(sc->enum_val);
@@ -1409,13 +1412,11 @@ static Node *primary() {
     tok = consume_str();
     if(tok) {
         // 文字列リテラルをグローバル変数に追加する
-        Node *node = alloc_node(ND_VAR);
         Var *gvar =
             new_gvar(new_label(), array_of(char_type, tok->cont_len), true);
         gvar->contents = tok->contents;
         gvar->cont_len = tok->cont_len;
-        node->var = gvar;
-        return node;
+        return new_var_node(gvar);
     }
 
     // そうでなければ数値のはず

@@ -692,6 +692,10 @@ static void global_var() {
     type = type_suffix(type);
     expect(";");
 
+    if(type->is_incomplete) {
+        error("不完全な型です");
+    }
+
     if(sclass == TYPEDEF) {
         push_scope(strndup(var_name, strlen(var_name)))->type_def = type;
     } else {
@@ -744,12 +748,19 @@ static Node *lvar_init_zero(Node *cur, Var *var, Type *ty, Designator *desg) {
 // | "{" (lvar-initializer2 ("," lvar-initializer2)* ","?)? "}"
 // - 初期化子リストが配列より短い場合、余った要素は0で初期化される
 // - char配列は文字列リテラルによって初期化可能
+// - lhsが不完全な配列型の場合、rhsの要素数を配列型のサイズとしてセットする
 static Node *lvar_initializer2(Node *cur, Var *var, Type *ty,
                                Designator *desg) {
     if(ty->ty == ARRAY && ty->ptr_to->ty == CHAR && token->kind == TK_STR) {
         // char配列を文字列リテラルで初期化する
         Token *tok = token;
         token = token->next;
+
+        if(ty->is_incomplete) {
+            ty->size = tok->cont_len;
+            ty->array_len = tok->cont_len;
+            ty->is_incomplete = false;
+        }
 
         int len =
             (ty->array_len < tok->cont_len) ? ty->array_len : tok->cont_len;
@@ -784,6 +795,12 @@ static Node *lvar_initializer2(Node *cur, Var *var, Type *ty,
         while(i < ty->array_len) {
             Designator desg2 = {desg, i++};
             cur = lvar_init_zero(cur, var, ty->ptr_to, &desg2);
+        }
+
+        if(ty->is_incomplete) {
+            ty->size = ty->ptr_to->size * i;
+            ty->array_len = i;
+            ty->is_incomplete = false;
         }
 
         return cur;
@@ -827,12 +844,11 @@ static Node *declaration() {
 
     // localsに定義した変数を追加
     Var *lvar = new_lvar(strndup(var_name, strlen(var_name)), type);
-    if(type->is_incomplete) {
-        error("不完全な型です");
-    }
 
     if(consume(";")) {
-        // 関数宣言のみ
+        if(type->is_incomplete) {
+            error("不完全な型です");
+        }
         return alloc_node(ND_NULL);
     }
 

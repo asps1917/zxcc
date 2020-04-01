@@ -722,6 +722,27 @@ static Initializer *emit_struct_padding(Initializer *cur, Type *parent,
     return new_init_zero(cur, end - start);
 }
 
+static void skip_excess_elements2() {
+    for(;;) {
+        if(consume("{")) {
+            skip_excess_elements2();
+        } else {
+            assign();
+        }
+
+        if(consume_end()) {
+            return;
+        }
+        expect(",");
+    }
+}
+
+static void skip_excess_elements() {
+    expect(",");
+    warn(token, "初期化子に余分な要素が存在します");
+    skip_excess_elements2();
+}
+
 // gvar-initializer2 = assign
 //                  | "{" (gvar-initializer2 ("," gvar-initializer2)* ","?)? "}"
 static Initializer *gvar_initializer2(Initializer *cur, Type *ty) {
@@ -739,8 +760,8 @@ static Initializer *gvar_initializer2(Initializer *cur, Type *ty) {
             } while(i < limit && !peek_end() && consume(","));
         }
 
-        if(open) {
-            expect_end();
+        if(open && !consume_end()) {
+            skip_excess_elements();
         }
 
         // 残りの配列要素をゼロで初期化する
@@ -766,8 +787,8 @@ static Initializer *gvar_initializer2(Initializer *cur, Type *ty) {
             } while(mem && !peek_end() && consume(","));
         }
 
-        if(open) {
-            expect_end();
+        if(open && !consume_end()) {
+            skip_excess_elements();
         }
 
         // 残りの構造体の要素をゼロで初期化する
@@ -923,8 +944,8 @@ static Node *lvar_initializer2(Node *cur, Var *var, Type *ty,
             } while(i < limit && !peek_end() && consume(","));
         }
 
-        if(open) {
-            expect_end();
+        if(open && !consume_end()) {
+            skip_excess_elements();
         }
 
         // 余った配列要素にゼロをセットする
@@ -953,8 +974,9 @@ static Node *lvar_initializer2(Node *cur, Var *var, Type *ty,
                 mem = mem->next;
             } while(mem && !peek_end() && consume(","));
         }
-        if(open) {
-            expect_end();
+
+        if(open && !consume_end()) {
+            skip_excess_elements();
         }
 
         // 余った構造体メンバにゼロをセットする

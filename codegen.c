@@ -615,17 +615,27 @@ static void funcgen(Function *func) {
 
 // データセグメントをアセンブリに出力する
 static void gen_data_seg(Program *prog) {
+    printf(".bss\n");
+
+    for(VarList *vlist = prog->globals; vlist; vlist = vlist->next) {
+        Var *gvar = vlist->var;
+        if(gvar->initializer) {
+            continue;
+        }
+
+        printf("%s:\n", gvar->name);
+        printf("  .zero %d\n", gvar->type->size);
+    }
+
     printf(".data\n");
 
     for(VarList *vlist = prog->globals; vlist; vlist = vlist->next) {
         Var *gvar = vlist->var;
-        printf("%s:\n", gvar->name);
-
         if(!gvar->initializer) {
-            // グローバル変数
-            printf("  .zero %d\n", gvar->type->size);
             continue;
         }
+
+        printf("%s:\n", gvar->name);
 
         for(Initializer *init = gvar->initializer; init; init = init->next) {
             if(init->label) {

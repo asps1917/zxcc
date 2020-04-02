@@ -629,7 +629,7 @@ static void gen_data_seg(Program *prog) {
 
         for(Initializer *init = gvar->initializer; init; init = init->next) {
             if(init->label) {
-                printf("  .quad %s\n", init->label);
+                printf("  .quad %s%+ld\n", init->label, init->addend);
             } else if(init->sz == 1) {
                 printf("  .byte %ld\n", init->val);
             } else {

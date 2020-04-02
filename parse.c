@@ -197,6 +197,7 @@ static Node *stmt();
 static Node *stmt2();
 static Node *expr();
 static long eval(Node *node);
+static long eval2(Node *node, Var **var);
 static long const_expr();
 static Node *assign();
 static Node *conditional();
@@ -692,9 +693,10 @@ static Initializer *new_init_val(Initializer *cur, int sz, int val) {
     return init;
 }
 
-static Initializer *new_init_label(Initializer *cur, char *label) {
+static Initializer *new_init_label(Initializer *cur, char *label, long addend) {
     Initializer *init = calloc(1, sizeof(Initializer));
     init->label = label;
+    init->addend = addend;
     cur->next = init;
     return init;
 }
@@ -822,18 +824,15 @@ static Initializer *gvar_initializer2(Initializer *cur, Type *ty) {
         expect_end();
     }
 
-    if(expr->kind == ND_ADDR) {
-        if(expr->lhs->kind != ND_VAR) {
-            error("無効な初期化子です");
-        }
-        return new_init_label(cur, expr->lhs->var->name);
-    }
+    Var *var = NULL;
+    long addend = eval2(expr, &var);
 
-    if(expr->kind == ND_VAR && expr->var->type->ty == ARRAY) {
-        return new_init_label(cur, expr->var->name);
+    if(var) {
+        int scale = (var->type->ty == ARRAY) ? var->type->ptr_to->size
+                                             : var->type->size;
+        return new_init_label(cur, var->name, addend * scale);
     }
-
-    return new_init_val(cur, ty->size, eval(expr));
+    return new_init_val(cur, ty->size, addend);
 }
 
 static Initializer *gvar_initializer(Type *ty) {
@@ -1255,13 +1254,26 @@ static Node *expr() {
     return node;
 }
 
+static long eval(Node *node) { return eval2(node, NULL); }
+
 // 与えられたnodeを定数式として評価する
-static long eval(Node *node) {
+//
+// 定数式は以下のどちらかの形式で表現される
+// - 数値
+// - ptr+n(ptrはグローバル変数に対するポインタ)
+// 後者の表現はグローバル変数に対する初期化子としてのみ使用可能
+static long eval2(Node *node, Var **var) {
     switch(node->kind) {
         case ND_ADD:
             return eval(node->lhs) + eval(node->rhs);
+        case ND_PTR_ADD:
+            return eval2(node->lhs, var) + eval(node->rhs);
         case ND_SUB:
             return eval(node->lhs) - eval(node->rhs);
+        case ND_PTR_SUB:
+            return eval2(node->lhs, var) - eval(node->rhs);
+        case ND_PTR_DIFF:
+            return eval2(node->lhs, var) - eval2(node->rhs, var);
         case ND_MUL:
             return eval(node->lhs) * eval(node->rhs);
         case ND_DIV:
@@ -1298,6 +1310,18 @@ static long eval(Node *node) {
             return eval(node->lhs) || eval(node->rhs);
         case ND_NUM:
             return node->val;
+        case ND_ADDR:
+            if(!var || *var || node->lhs->kind != ND_VAR) {
+                error("無効な初期化子です");
+            }
+            *var = node->lhs->var;
+            return 0;
+        case ND_VAR:
+            if(!var || *var || node->var->type->ty != ARRAY) {
+                error("無効な初期化子です");
+            }
+            *var = node->var;
+            return 0;
     }
 
     error("定数式ではありません");

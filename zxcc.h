@@ -197,6 +197,7 @@ struct Initializer {
 
     // 他のグローバル変数へのポインタ
     char *label;
+    long addend;
 };
 
 typedef struct Function Function;

@@ -609,6 +609,12 @@ static Member *struct_member(void) {
 // params   =
 // basetype declarator type-suffix ("," basetype declarator type-suffix)*
 static VarList *params() {
+    Token *tok = token;
+    if(consume("void")) {
+        return NULL;
+    }
+    token = tok;
+
     VarList *head = calloc(1, sizeof(VarList));
     head->var = calloc(1, sizeof(Var));
     VarList *cur = head;

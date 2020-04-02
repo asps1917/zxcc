@@ -83,7 +83,7 @@ static int static_fn() { return 3; }
 
 int param_decay(int x[]) { return x[0]; }
 
-void voidfn() {}
+void voidfn(void) {}
 
 int main() {
     assert(8, ({

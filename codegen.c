@@ -623,6 +623,7 @@ static void gen_data_seg(Program *prog) {
             continue;
         }
 
+        printf(".align %d\n", gvar->type->align);
         printf("%s:\n", gvar->name);
         printf("  .zero %d\n", gvar->type->size);
     }
@@ -635,6 +636,7 @@ static void gen_data_seg(Program *prog) {
             continue;
         }
 
+        printf(".align %d\n", gvar->type->align);
         printf("%s:\n", gvar->name);
 
         for(Initializer *init = gvar->initializer; init; init = init->next) {

@@ -221,15 +221,19 @@ static Node *primary();
 // 現在のトークンが関数か判定する
 static bool is_function() {
     Token *cur = token;
+    bool isfunc = false;
 
     StorageClass sclass;
     Type *ty = basetype(&sclass);
-    char *name = NULL;
-    declarator(ty, &name);
-    bool retval = name && consume("(");
+
+    if(!consume(";")) {
+        char *name = NULL;
+        declarator(ty, &name);
+        isfunc = name && consume("(");
+    }
 
     token = cur;
-    return retval;
+    return isfunc;
 }
 
 // program = (global_var | function)*
@@ -851,6 +855,11 @@ static Initializer *gvar_initializer(Type *ty) {
 static void global_var() {
     StorageClass sclass;
     Type *type = basetype(&sclass);
+
+    if(consume(";")) {
+        return;
+    }
+
     char *var_name = NULL;
     type = declarator(type, &var_name);
     type = type_suffix(type);

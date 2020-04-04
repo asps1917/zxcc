@@ -1113,6 +1113,7 @@ static Node *stmt() {
 //      | "continue" ";"
 //      | "goto" ident ";"
 //      | ident ":" stmt
+//      | ";"
 static Node *stmt2() {
     Node *node;
 
@@ -1244,6 +1245,10 @@ static Node *stmt2() {
         node->label_name = expect_ident();
         expect(";");
         return node;
+    }
+
+    if(consume(";")) {
+        return alloc_node(ND_NULL);
     }
 
     Token *tok;

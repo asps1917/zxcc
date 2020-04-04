@@ -1114,7 +1114,7 @@ static Node *stmt() {
     return node;
 }
 
-// stmt = "return" expr ";"
+// stmt = "return" expr? ";"
 //      | "{" stmt* "}"
 //      | "if" "(" expr ")" stmt ("else" stmt)?
 //      | "switch" "(" expr ")" stmt
@@ -1133,6 +1133,10 @@ static Node *stmt2() {
     Node *node;
 
     if(consume_return()) {
+        if(consume(";")) {
+            return alloc_node(ND_RETURN);
+        }
+
         node = alloc_node(ND_RETURN);
         node->lhs = expr();
         expect(";");

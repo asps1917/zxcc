@@ -396,8 +396,10 @@ static void gen(Node *node) {
         }
         case ND_RETURN:
             debug_printf("gen - ND_RETURN");
-            gen(node->lhs);
-            printf("  pop rax\n");
+            if(node->lhs) {
+                gen(node->lhs);
+                printf("  pop rax\n");
+            }
             printf("  jmp .L.return.%s\n", func_name);
             debug_printf("gen - ND_RETURN end");
             return;

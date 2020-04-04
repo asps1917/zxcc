@@ -179,6 +179,7 @@ static char *new_label(void) {
 typedef enum {
     TYPEDEF = 1 << 0,
     STATIC = 1 << 1,
+    EXTERN = 1 << 2,
 } StorageClass;
 
 static Type *basetype(StorageClass *sclass);
@@ -287,7 +288,7 @@ static Type *basetype(StorageClass *sclass) {
         Token *tok = token;
 
         // 記憶クラス指定子の処理
-        if(match("typedef") || match("static")) {
+        if(match("typedef") || match("static") || match("extern")) {
             if(!sclass) {
                 error("記憶クラス指定子は許可されていません");
             }
@@ -296,11 +297,10 @@ static Type *basetype(StorageClass *sclass) {
                 *sclass |= TYPEDEF;
             } else if(consume("static")) {
                 *sclass |= STATIC;
+            } else if(consume("extern")) {
+                *sclass |= EXTERN;
             }
 
-            if(*sclass & (*sclass - 1)) {
-                error("typedefとstaticは同時に使用できません");
-            }
             continue;
         }
 
@@ -861,17 +861,23 @@ static void global_var() {
         return;
     }
 
-    Var *var = new_gvar(strndup(var_name, strlen(var_name)), type, true);
+    Var *var =
+        new_gvar(strndup(var_name, strlen(var_name)), type, sclass != EXTERN);
 
-    if(!consume("=")) {
-        if(type->is_incomplete) {
-            error("不完全な型です");
-        }
+    if(sclass == EXTERN) {
         expect(";");
         return;
     }
 
-    var->initializer = gvar_initializer(type);
+    if(consume("=")) {
+        var->initializer = gvar_initializer(type);
+        expect(";");
+        return;
+    }
+
+    if(type->is_incomplete) {
+        error("不完全な型です");
+    }
     expect(";");
 }
 
@@ -1073,7 +1079,8 @@ static Node *read_expr_stmt(void) { return new_unary(ND_EXPR_STMT, expr()); }
 static bool is_typename(void) {
     return match("void") || match("_Bool") || match("char") || match("short") ||
            match("int") || match("long") || match("struct") || match("enum") ||
-           match("typedef") || match("static") || find_typedef(token);
+           match("typedef") || match("static") || match("extern") ||
+           find_typedef(token);
 }
 
 static Node *stmt() {

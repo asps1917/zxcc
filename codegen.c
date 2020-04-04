@@ -629,6 +629,12 @@ static void funcgen(Function *func) {
 
 // データセグメントをアセンブリに出力する
 static void gen_data_seg(Program *prog) {
+    for(VarList *vlist = prog->globals; vlist; vlist = vlist->next) {
+        if(!vlist->var->is_static) {
+            printf(".global %s\n", vlist->var->name);
+        }
+    }
+
     printf(".bss\n");
 
     for(VarList *vlist = prog->globals; vlist; vlist = vlist->next) {

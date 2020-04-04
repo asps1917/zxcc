@@ -135,6 +135,7 @@ struct Var {
     int offset;  // RBPからのオフセット
 
     // グローバル変数
+    bool is_static;
     Initializer *initializer;
 };
 

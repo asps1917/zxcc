@@ -113,8 +113,9 @@ static Var *new_lvar(char *name, Type *type) {
 
 // 引数として与えられた変数名のVar構造体を生成する。
 // 生成したVar構造体はglobalsリストに追加される。
-static Var *new_gvar(char *name, Type *type, bool emit) {
+static Var *new_gvar(char *name, Type *type, bool is_static, bool emit) {
     Var *gvar = new_var(name, type, false);
+    gvar->is_static = is_static;
     push_scope(name)->var = gvar;
 
     if(emit) {
@@ -660,7 +661,7 @@ static Function *function() {
     ty = declarator(ty, &name);
 
     // 関数の型をスコープに追加する
-    new_gvar(name, func_type(ty), false);
+    new_gvar(name, func_type(ty), false, false);
 
     // 関数オブジェクトを生成
     Function *func = calloc(1, sizeof(Function));
@@ -871,8 +872,8 @@ static void global_var() {
         return;
     }
 
-    Var *var =
-        new_gvar(strndup(var_name, strlen(var_name)), type, sclass != EXTERN);
+    Var *var = new_gvar(strndup(var_name, strlen(var_name)), type,
+                        sclass == STATIC, sclass != EXTERN);
 
     if(sclass == EXTERN) {
         expect(";");
@@ -1068,7 +1069,7 @@ static Node *declaration() {
 
     if(sclass == STATIC) {
         // staticローカル変数
-        Var *var = new_gvar(new_label(), type, true);
+        Var *var = new_gvar(new_label(), type, true, true);
         push_scope(strndup(var_name, strlen(var_name)))->var = var;
 
         if(consume("=")) {
@@ -1727,7 +1728,7 @@ static Node *compound_literal() {
     }
 
     if(scope_depth == 0) {
-        Var *var = new_gvar(new_label(), ty, true);
+        Var *var = new_gvar(new_label(), ty, true, true);
         var->initializer = gvar_initializer(ty);
         return new_var_node(var);
     }
@@ -1858,8 +1859,8 @@ static Node *primary() {
     tok = consume_str();
     if(tok) {
         // 文字列リテラルをグローバル変数に追加する
-        Var *gvar =
-            new_gvar(new_label(), array_of(char_type, tok->cont_len), true);
+        Var *gvar = new_gvar(new_label(), array_of(char_type, tok->cont_len),
+                             true, true);
         gvar->initializer = gvar_init_string(tok->contents, tok->cont_len);
         return new_var_node(gvar);
     }

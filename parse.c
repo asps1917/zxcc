@@ -1065,6 +1065,20 @@ static Node *declaration() {
         error("変数がvoid型として宣言されています");
     }
 
+    if(sclass == STATIC) {
+        // staticローカル変数
+        Var *var = new_gvar(new_label(), type, true);
+        push_scope(strndup(var_name, strlen(var_name)))->var = var;
+
+        if(consume("=")) {
+            var->initializer = gvar_initializer(type);
+        } else if(type->is_incomplete) {
+            error("不完全な型です");
+        }
+        consume(";");
+        return alloc_node(ND_NULL);
+    }
+
     // localsに定義した変数を追加
     Var *lvar = new_lvar(strndup(var_name, strlen(var_name)), type);
 
@@ -1338,7 +1352,8 @@ static long eval2(Node *node, Var **var) {
         case ND_NUM:
             return node->val;
         case ND_ADDR:
-            if(!var || *var || node->lhs->kind != ND_VAR) {
+            if(!var || *var || node->lhs->kind != ND_VAR ||
+               node->lhs->var->is_local) {
                 error("無効な初期化子です");
             }
             *var = node->lhs->var;

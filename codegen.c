@@ -20,6 +20,10 @@ static void gen_lval(Node *node) {
     debug_printf("gen_lval");
     switch(node->kind) {
         case ND_VAR:
+            if(node->init) {
+                gen(node->init);
+            }
+
             if(node->var->is_local) {
                 printf("  mov rax, rbp\n");
                 printf("  sub rax, %d\n", node->var->offset);
@@ -28,16 +32,16 @@ static void gen_lval(Node *node) {
                 // グローバル変数 or 文字列リテラル
                 printf("  push offset %s\n", node->var->name);
             }
-            break;
+            return;
         case ND_DEREF:
             gen(node->lhs);
-            break;
+            return;
         case ND_MEMBER:
             gen_lval(node->lhs);
             printf("  pop rax\n");
             printf("  add rax, %d\n", node->member->offset);
             printf("  push rax\n");
-            break;
+            return;
         default:
             error("引数が左辺値として評価不可能なノードです");
     }
@@ -234,6 +238,14 @@ static void gen(Node *node) {
             printf("  add rsp, 8\n");
             return;
         case ND_VAR:
+            if(node->init) {
+                gen(node->init);
+            }
+            gen_lval(node);
+            if(node->type->ty != ARRAY) {
+                load(node->type);
+            }
+            return;
         case ND_MEMBER:
             debug_printf("gen - ND_VAR");
             gen_lval(node);

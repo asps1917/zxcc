@@ -216,6 +216,7 @@ static Node *mul();
 static Node *cast();
 static Node *unary();
 static Node *postfix();
+static Node *compound_literal();
 static Node *primary();
 
 // 現在のトークンが関数か判定する
@@ -1590,10 +1591,12 @@ static Node *cast() {
         if(is_typename()) {
             Type *ty = type_name();
             expect(")");
-            Node *node = new_unary(ND_CAST, cast());
-            add_type(node->lhs);
-            node->type = ty;
-            return node;
+            if(!consume("{")) {
+                Node *node = new_unary(ND_CAST, cast());
+                add_type(node->lhs);
+                node->type = ty;
+                return node;
+            }
         }
         token = tok;
     }
@@ -1641,9 +1644,15 @@ static Node *struct_ref(Node *lhs) {
     return node;
 }
 
-// postfix = primary ("[" expr "]" | "." ident | "->" ident | "++" | "--")*
+// postfix = compound-literal
+//         | primary ("[" expr "]" | "." ident | "->" ident | "++" | "--")*
 static Node *postfix() {
-    Node *node = primary();
+    Node *node = compound_literal();
+    if(node) {
+        return node;
+    }
+
+    node = primary();
 
     for(;;) {
         if(consume("[")) {
@@ -1694,6 +1703,35 @@ static Node *func_args() {
     }
     expect(")");
     return head;
+}
+
+// compound-literal = "(" type-name ")" "{" (gvar-initializer |
+// lvar-initializer) "}"
+static Node *compound_literal() {
+    Token *tok = token;
+    if(!consume("(") || !is_typename()) {
+        token = tok;
+        return NULL;
+    }
+
+    Type *ty = type_name();
+    expect(")");
+
+    if(!match("{")) {
+        token = tok;
+        return NULL;
+    }
+
+    if(scope_depth == 0) {
+        Var *var = new_gvar(new_label(), ty, true);
+        var->initializer = gvar_initializer(ty);
+        return new_var_node(var);
+    }
+
+    Var *var = new_lvar(new_label(), ty);
+    Node *node = new_var_node(var);
+    node->init = lvar_initializer(var);
+    return node;
 }
 
 // stmt-expr = "(" "{" stmt stmt* "}" ")"

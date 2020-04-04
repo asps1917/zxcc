@@ -1712,6 +1712,7 @@ static Node *stmt_expr() {
 //         | "sizeof" "(" type-name ")"
 //         | "sizeof" unary
 //         | "(" "{" stmt-expr-tail
+//         | "_Alignof" "(" type-name ")"
 static Node *primary() {
     // 次のトークンが"("なら、"(" expr ")"のはず
     if(consume("(")) {
@@ -1746,6 +1747,13 @@ static Node *primary() {
             error("不完全な型です");
         }
         return new_node_num(node->type->size);
+    }
+
+    if(consume("_Alignof")) {
+        expect("(");
+        Type *ty = type_name();
+        expect(")");
+        return new_node_num(ty->align);
     }
 
     // identトークンのチェック

@@ -592,6 +592,9 @@ static void gen(Node *node) {
             printf("  call %s\n", node->func_name);
             printf("  add rsp, 8\n");
             printf(".L.end.%d:\n", label_num);
+            if(node->type->ty == BOOL) {
+                printf("  movzb rax, al\n");
+            }
             printf("  push rax\n");
             debug_printf("gen - ND_FUNCCALL end");
             return;

@@ -612,43 +612,49 @@ static Member *struct_member(void) {
     return mem;
 }
 
+static VarList *read_func_param() {
+    Type *type = basetype(NULL);
+    char *var_name = NULL;
+    type = declarator(type, &var_name);
+    type = type_suffix(type);
+
+    // 引数中の"T型の配列"を"T型へのポインタ"に変換する
+    // 例: *argv[] → **argv
+    if(type->ty == ARRAY) {
+        type = pointer_to(type->ptr_to);
+    }
+
+    // identを以下のVarListに追加
+    // * 関数定義内の引数リスト
+    // * locals(ローカル変数リスト)
+    VarList *vl = calloc(1, sizeof(VarList));
+    vl->var = new_lvar(var_name, type);
+    return vl;
+}
+
 // params   =
 // basetype declarator type-suffix ("," basetype declarator type-suffix)*
 static VarList *params() {
+    if(consume(")")) {
+        return NULL;
+    }
+
     Token *tok = token;
-    if(consume("void")) {
+    if(consume("void") && consume(")")) {
         return NULL;
     }
     token = tok;
 
-    VarList *head = calloc(1, sizeof(VarList));
-    head->var = calloc(1, sizeof(Var));
+    VarList *head = read_func_param();
     VarList *cur = head;
 
-    while(1) {
-        Type *type = basetype(NULL);
-        char *var_name = NULL;
-        type = declarator(type, &var_name);
-        type = type_suffix(type);
-
-        // 引数中の"T型の配列"を"T型へのポインタ"に変換する
-        // 例: *argv[] → **argv
-        if(type->ty == ARRAY) {
-            type = pointer_to(type->ptr_to);
-        }
-
-        // identを以下のVarListに追加
-        // * 関数定義内の引数リスト
-        // * locals(ローカル変数リスト)
-        Var *lvar = new_lvar(var_name, type);
-        cur->next = calloc(1, sizeof(VarList));
-        cur->next->var = lvar;
+    while(!consume(")")) {
+        expect(",");
+        cur->next = read_func_param();
         cur = cur->next;
-
-        if(!consume(",")) {
-            return head->next;
-        }
     }
+
+    return head;
 }
 
 // function = basetype declarator "(" params? ")" ("{" stmt* "}" | ";")
@@ -671,10 +677,7 @@ static Function *function() {
     expect("(");
 
     Scope *sc = enter_scope();
-    if(!consume(")")) {
-        func->args = params();
-        expect(")");
-    }
+    func->args = params();
 
     if(consume(";")) {
         leave_scope(sc);

@@ -169,7 +169,7 @@ static char *is_reserved(char *p) {
         "if",     "else",   "while",   "for",    "int",      "char",
         "sizeof", "struct", "typedef", "short",  "long",     "void",
         "_Bool",  "enum",   "static",  "break",  "continue", "goto",
-        "switch", "case",   "default", "extern", "_Alignof"};
+        "switch", "case",   "default", "extern", "_Alignof", "do"};
 
     for(int i = 0; i < sizeof(keywords) / sizeof(*keywords); i++) {
         int len_keyword = strlen(keywords[i]);

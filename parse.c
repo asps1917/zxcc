@@ -1123,6 +1123,7 @@ static Node *stmt() {
 //      | "default" ":" stmt
 //      | "while" "(" expr ")" stmt
 //      | "for" "(" (expr? ";" | declaration) expr? ";" expr? ")" stmt
+//      | "do" stmt "while" "(" expr ")" ";"
 //      | expr ";"
 //      | declaration
 //      | "break" ";"
@@ -1247,6 +1248,17 @@ static Node *stmt2() {
         }
         node->then = stmt();
         leave_scope(sc);
+        return node;
+    }
+
+    if(consume("do")) {
+        Node *node = alloc_node(ND_DO);
+        node->then = stmt();
+        expect("while");
+        expect("(");
+        node->cond = expr();
+        expect(")");
+        expect(";");
         return node;
     }
 

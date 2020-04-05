@@ -484,6 +484,25 @@ static void gen(Node *node) {
             debug_printf("gen - ND_FOR end");
             return;
         }
+        case ND_DO: {
+            int seq = label_seq_num++;
+            int brk = brkseq;
+            int cont = contseq;
+            brkseq = contseq = seq;
+
+            printf(".Lbegin%d:\n", seq);
+            gen(node->then);
+            printf(".Lcontinue%d:\n", seq);
+            gen(node->cond);
+            printf("  pop rax\n");
+            printf("  cmp rax, 0\n");
+            printf("  jne .Lbegin%d\n", seq);
+            printf(".Lbreak%d:\n", seq);
+
+            brkseq = brk;
+            contseq = cont;
+            return;
+        }
         case ND_SWITCH: {
             int seq = label_seq_num++;
             int brk = brkseq;

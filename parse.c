@@ -1379,6 +1379,7 @@ static long const_expr() { return eval(conditional()); }
 
 // assign    = conditional (assign-op assign)?
 // assign-op = "=" | "+=" | "-=" | "*=" | "/=" | "<<=" | ">>="
+//           | "&=" | "|=" | "^="
 static Node *assign() {
     Node *node = conditional();
 
@@ -1396,6 +1397,15 @@ static Node *assign() {
     }
     if(consume(">>=")) {
         return new_binary(ND_SHR_EQ, node, assign());
+    }
+    if(consume("&=")) {
+        return new_binary(ND_BITAND_EQ, node, assign());
+    }
+    if(consume("|=")) {
+        return new_binary(ND_BITOR_EQ, node, assign());
+    }
+    if(consume("^=")) {
+        return new_binary(ND_BITXOR_EQ, node, assign());
     }
 
     if(consume("+=")) {

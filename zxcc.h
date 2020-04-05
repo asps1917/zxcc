@@ -96,6 +96,9 @@ typedef enum {
     ND_DIV_EQ,      // /=
     ND_SHL_EQ,      // <<=
     ND_SHR_EQ,      // >>=
+    ND_BITAND_EQ,   // &=
+    ND_BITOR_EQ,    // |=
+    ND_BITXOR_EQ,   // ^=
     ND_COMMA,       // ,
     ND_MEMBER,      // . (構造体のメンバアクセス)
     ND_VAR,         // ローカル変数

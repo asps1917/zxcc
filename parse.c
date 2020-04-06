@@ -634,27 +634,32 @@ static VarList *read_func_param() {
 
 // params   =
 // basetype declarator type-suffix ("," basetype declarator type-suffix)*
-static VarList *params() {
+static void params(Function *fn) {
     if(consume(")")) {
-        return NULL;
+        return;
     }
 
     Token *tok = token;
     if(consume("void") && consume(")")) {
-        return NULL;
+        return;
     }
     token = tok;
 
-    VarList *head = read_func_param();
-    VarList *cur = head;
+    fn->args = read_func_param();
+    VarList *cur = fn->args;
 
     while(!consume(")")) {
         expect(",");
+
+        if(consume("...")) {
+            fn->has_varargs = true;
+            expect(")");
+            return;
+        }
+
         cur->next = read_func_param();
         cur = cur->next;
     }
-
-    return head;
 }
 
 // function = basetype declarator "(" params? ")" ("{" stmt* "}" | ";")
@@ -677,7 +682,7 @@ static Function *function() {
     expect("(");
 
     Scope *sc = enter_scope();
-    func->args = params();
+    params(func);
 
     if(consume(";")) {
         leave_scope(sc);

@@ -211,6 +211,7 @@ struct Function {
     char *name;
     VarList *args;
     bool is_static;
+    bool has_varargs;
 
     Node *node;
     VarList *locals;

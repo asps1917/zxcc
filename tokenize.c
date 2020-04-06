@@ -330,7 +330,8 @@ Token *tokenize() {
         }
 
         // 3文字の演算子
-        if(strncmp("<<=", p, 3) == 0 || strncmp(">>=", p, 3) == 0) {
+        if(strncmp("<<=", p, 3) == 0 || strncmp(">>=", p, 3) == 0 ||
+           strncmp("...", p, 3) == 0) {
             cur = new_token(TK_RESERVED, cur, p, 3);
             p += 3;
             continue;

@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
     // ローカル変数のオフセット設定 & スタックサイズ算出
     // localsリスト上の各ローカル変数に8byteずつ割り当てる
     for(Function *func = prog->funcs; func; func = func->next) {
-        int offset = 0;
+        int offset = func->has_varargs ? 56 : 0;
         for(VarList *vl = func->locals; vl; vl = vl->next) {
             Var *lvar = vl->var;
             offset = align_to(offset, lvar->type->align);

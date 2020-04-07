@@ -1862,6 +1862,8 @@ static Node *primary() {
                     error("関数ではありません");
                 }
                 node->type = sc->var->type->return_ty;
+            } else if(!strcmp(node->func_name, "__builtin_va_start")) {
+                node->type = void_type;
             } else {
                 warn(tok, "暗黙的な関数宣言です");
                 node->type = int_type;

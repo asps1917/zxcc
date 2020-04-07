@@ -566,6 +566,16 @@ static void gen(Node *node) {
             return;
         case ND_FUNCCALL:
             debug_printf("gen - ND_FUNCCALL");
+            if(!strcmp(node->func_name, "__builtin_va_start")) {
+                printf("  pop rax\n");
+                printf("  mov edi, dword ptr [rbp-8]\n");
+                printf("  mov dword ptr [rax], 0\n");
+                printf("  mov dword ptr [rax+4], 0\n");
+                printf("  mov qword ptr [rax+8], rdi\n");
+                printf("  mov qword ptr [rax+16], 0\n");
+                return;
+            }
+
             int args_count = 0;
             for(Node *cur = node->args; cur; cur = cur->next) {
                 gen(cur);
@@ -635,6 +645,22 @@ static void funcgen(Function *func) {
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
     printf("  sub rsp, %d\n", func->stack_size);
+
+    // 可変長引数の関数の場合、引数用レジスタの値を保存する
+    if(func->has_varargs) {
+        int n = 0;
+        for(VarList *vl = func->args; vl; vl = vl->next) {
+            n++;
+        }
+
+        printf("mov dword ptr [rbp-8], %d\n", n * 8);
+        printf("mov [rbp-16], r9\n");
+        printf("mov [rbp-24], r8\n");
+        printf("mov [rbp-32], rcx\n");
+        printf("mov [rbp-40], rdx\n");
+        printf("mov [rbp-48], rsi\n");
+        printf("mov [rbp-56], rdi\n");
+    }
 
     // レジスタ上の引数をスタック領域にコピー
     int i = 0;

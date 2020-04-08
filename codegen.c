@@ -226,7 +226,7 @@ static void gen(Node *node) {
         case ND_NUM:
             debug_printf("gen - ND_NUM");
             if(node->val == (int)node->val) {
-                printf("  push %d\n", node->val);
+                printf("  push %ld\n", node->val);
             } else {
                 printf("  movabs rax, %ld\n", node->val);
                 printf("  push rax\n");

@@ -261,12 +261,12 @@ struct Member {
     int offset;
 };
 
-Type *void_type;
-Type *bool_type;
-Type *char_type;
-Type *short_type;
-Type *int_type;
-Type *long_type;
+extern Type *void_type;
+extern Type *bool_type;
+extern Type *char_type;
+extern Type *short_type;
+extern Type *int_type;
+extern Type *long_type;
 
 Type *pointer_to(Type *base);
 Type *array_of(Type *base, int len);

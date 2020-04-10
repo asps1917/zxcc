@@ -11,13 +11,11 @@ static char *regs_for_args_4[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 static char *regs_for_args_2[] = {"di", "si", "dx", "cx", "r8w", "r9w"};
 static char *regs_for_args_1[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
 
-static void debug_printf(char *fmt, ...);
 static void gen(Node *node);
 
 // nodeを左辺値として評価し、そのアドレスをスタックにpushするコードを生成する。
 // nodeが評価不可能な場合エラー終了させる。
 static void gen_lval(Node *node) {
-    debug_printf("gen_lval");
     switch(node->kind) {
         case ND_VAR:
             if(node->init) {
@@ -45,7 +43,6 @@ static void gen_lval(Node *node) {
         default:
             error("引数が左辺値として評価不可能なノードです");
     }
-    debug_printf("gen_lval end");
 }
 
 static void load(Type *type) {
@@ -132,18 +129,15 @@ static void gen_binary(Node *node) {
     switch(node->kind) {
         case ND_ADD:
         case ND_ADD_EQ:
-            debug_printf("gen - ND_ADD");
             printf("  add rax, rdi\n");
             break;
         case ND_PTR_ADD:
         case ND_PTR_ADD_EQ:
-            debug_printf("gen - ND_PTR_ADD");
             printf("  imul rdi, %d\n", node->type->ptr_to->size);
             printf("  add rax, rdi\n");
             break;
         case ND_SUB:
         case ND_SUB_EQ:
-            debug_printf("gen - ND_SUB");
             printf("  sub rax, rdi\n");
             break;
         case ND_PTR_SUB:
@@ -159,12 +153,10 @@ static void gen_binary(Node *node) {
             break;
         case ND_MUL:
         case ND_MUL_EQ:
-            debug_printf("gen - ND_MUL");
             printf("  imul rax, rdi\n");
             break;
         case ND_DIV:
         case ND_DIV_EQ:
-            debug_printf("gen - ND_DIV");
             printf("  cqo\n");
             printf("  idiv rdi\n");
             break;
@@ -191,25 +183,21 @@ static void gen_binary(Node *node) {
             printf("  sar rax, cl\n");
             break;
         case ND_EQ:
-            debug_printf("gen - ND_EQ");
             printf("  cmp rax, rdi\n");
             printf("  sete al\n");
             printf("  movzb rax, al\n");
             break;
         case ND_NE:
-            debug_printf("gen - ND_NE");
             printf("  cmp rax, rdi\n");
             printf("  setne al\n");
             printf("  movzb rax, al\n");
             break;
         case ND_LT:
-            debug_printf("gen - ND_LT");
             printf("  cmp rax, rdi\n");
             printf("  setl al\n");
             printf("  movzb rax, al\n");
             break;
         case ND_LE:
-            debug_printf("gen - ND_LE");
             printf("  cmp rax, rdi\n");
             printf("  setle al\n");
             printf("  movzb rax, al\n");
@@ -227,7 +215,6 @@ static void gen(Node *node) {
             // 何もしない
             return;
         case ND_NUM:
-            debug_printf("gen - ND_NUM");
             if(node->val == (int)node->val) {
                 printf("  push %ld\n", node->val);
             } else {
@@ -236,7 +223,6 @@ static void gen(Node *node) {
             }
             return;
         case ND_EXPR_STMT:
-            debug_printf("gen - ND_EXPR_STMT");
             gen(node->lhs);
             printf("  add rsp, 8\n");
             return;
@@ -250,19 +236,15 @@ static void gen(Node *node) {
             }
             return;
         case ND_MEMBER:
-            debug_printf("gen - ND_VAR");
             gen_lval(node);
             if(node->type->ty != ARRAY) {
                 load(node->type);
             }
-            debug_printf("gen - ND_VAR end");
             return;
         case ND_ASSIGN:
-            debug_printf("gen - ND_ASSIGN");
             gen_lval(node->lhs);  // 左辺: 変数のアドレスをpush
             gen(node->rhs);       // 右辺: 数値をpush
             store(node->type);
-            debug_printf("gen - ND_ASSIGN end");
             return;
         case ND_TERNARY: {
             int seq = label_seq_num++;
@@ -278,42 +260,34 @@ static void gen(Node *node) {
             return;
         }
         case ND_PRE_INC:
-            debug_printf("gen - ND_PRE_INC");
             gen_lval(node->lhs);
             printf("  push [rsp]\n");
             load(node->type);
             inc(node->type);
             store(node->type);
-            debug_printf("gen - ND_PRE_INC end");
             return;
         case ND_PRE_DEC:
-            debug_printf("gen - ND_PRE_DEC");
             gen_lval(node->lhs);
             printf("  push [rsp]\n");
             load(node->type);
             dec(node->type);
             store(node->type);
-            debug_printf("gen - ND_PRE_DEC end");
             return;
         case ND_POST_INC:
-            debug_printf("gen - ND_POST_INC");
             gen_lval(node->lhs);
             printf("  push [rsp]\n");
             load(node->type);
             inc(node->type);
             store(node->type);
             dec(node->type);
-            debug_printf("gen - ND_POST_INC end");
             return;
         case ND_POST_DEC:
-            debug_printf("gen - ND_POST_DEC");
             gen_lval(node->lhs);
             printf("  push [rsp]\n");
             load(node->type);
             dec(node->type);
             store(node->type);
             inc(node->type);
-            debug_printf("gen - ND_POST_DEC end");
             return;
         case ND_ADD_EQ:
         case ND_PTR_ADD_EQ:
@@ -334,23 +308,17 @@ static void gen(Node *node) {
             store(node->type);
             return;
         case ND_COMMA:
-            debug_printf("gen - ND_COMMA");
             gen(node->lhs);
             gen(node->rhs);
-            debug_printf("gen - ND_COMMA end");
             return;
         case ND_ADDR:
-            debug_printf("gen - ND_ADDR");
             gen_lval(node->lhs);
-            debug_printf("gen - ND_ADDR end");
             return;
         case ND_DEREF:
-            debug_printf("gen - ND_DEREF");
             gen(node->lhs);
             if(node->type->ty != ARRAY) {
                 load(node->type);
             }
-            debug_printf("gen - ND_DEREF end");
             return;
         case ND_NOT:
             gen(node->lhs);
@@ -401,16 +369,13 @@ static void gen(Node *node) {
             return;
         }
         case ND_RETURN:
-            debug_printf("gen - ND_RETURN");
             if(node->lhs) {
                 gen(node->lhs);
                 printf("  pop rax\n");
             }
             printf("  jmp .L.return.%s\n", func_name);
-            debug_printf("gen - ND_RETURN end");
             return;
         case ND_IF:
-            debug_printf("gen - ND_IF");
             gen(node->cond);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
@@ -429,10 +394,8 @@ static void gen(Node *node) {
                 gen(node->then);
                 printf(".Lend%d:\n", label_num);
             }
-            debug_printf("gen - ND_IF end");
             return;
         case ND_WHILE: {
-            debug_printf("gen - ND_WHILE");
             label_num = label_seq_num++;
             int brk = brkseq;
             int cont = contseq;
@@ -449,11 +412,9 @@ static void gen(Node *node) {
 
             brkseq = brk;
             contseq = cont;
-            debug_printf("gen - ND_WHILE end");
             return;
         }
         case ND_FOR: {
-            debug_printf("gen - ND_FOR");
             label_num = label_seq_num++;
             int brk = brkseq;
             int cont = contseq;
@@ -481,7 +442,6 @@ static void gen(Node *node) {
 
             brkseq = brk;
             contseq = cont;
-            debug_printf("gen - ND_FOR end");
             return;
         }
         case ND_DO: {
@@ -539,11 +499,9 @@ static void gen(Node *node) {
             return;
         case ND_BLOCK:
         case ND_STMT_EXPR:
-            debug_printf("gen - ND_BLOCK, ND_STMT_EXPR");
             for(Node *cur = node->block; cur; cur = cur->next) {
                 gen(cur);
             }
-            debug_printf("gen - ND_BLOCK, ND_STMT_EXPR end");
             return;
         case ND_BREAK:
             if(brkseq == 0) {
@@ -565,7 +523,6 @@ static void gen(Node *node) {
             gen(node->lhs);
             return;
         case ND_FUNCCALL:
-            debug_printf("gen - ND_FUNCCALL");
             if(!strcmp(node->func_name, "__builtin_va_start")) {
                 printf("  pop rax\n");
                 printf("  mov edi, dword ptr [rbp-8]\n");
@@ -606,7 +563,6 @@ static void gen(Node *node) {
                 printf("  movzb rax, al\n");
             }
             printf("  push rax\n");
-            debug_printf("gen - ND_FUNCCALL end");
             return;
         case ND_CAST:
             gen(node->lhs);
@@ -741,19 +697,4 @@ void codegen(Program *prog) {
     printf(".intel_syntax noprefix\n");
     gen_data_seg(prog);
     gen_text_seg(prog);
-}
-
-int is_debug = 0;
-// デバッグ用のコメントをアセンブリに出力する
-static void debug_printf(char *fmt, ...) {
-    if(!is_debug) {
-        return;
-    }
-    va_list va;
-    va_start(va, fmt);
-    printf("#[DEBUG] ");
-    vprintf(fmt, va);
-    printf("\n");
-
-    va_end(va);
 }

@@ -417,17 +417,17 @@ static void gen(Node *node) {
             label_num = label_seq_num++;
             if(node->els) {
                 // elseあり
-                printf("  je  .Lelse%03d\n", label_num);
+                printf("  je  .Lelse%d\n", label_num);
                 gen(node->then);
-                printf("  jmp .Lend%03d\n", label_num);
-                printf(".Lelse%03d:\n", label_num);
+                printf("  jmp .Lend%d\n", label_num);
+                printf(".Lelse%d:\n", label_num);
                 gen(node->els);
-                printf(".Lend%03d:\n", label_num);
+                printf(".Lend%d:\n", label_num);
             } else {
                 // elseなし
-                printf("  je  .Lend%03d\n", label_num);
+                printf("  je  .Lend%d\n", label_num);
                 gen(node->then);
-                printf(".Lend%03d:\n", label_num);
+                printf(".Lend%d:\n", label_num);
             }
             debug_printf("gen - ND_IF end");
             return;
@@ -438,14 +438,14 @@ static void gen(Node *node) {
             int cont = contseq;
             brkseq = contseq = label_num;
 
-            printf(".Lcontinue%03d:\n", label_num);
+            printf(".Lcontinue%d:\n", label_num);
             gen(node->cond);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
-            printf("  je  .Lbreak%03d\n", label_num);
+            printf("  je  .Lbreak%d\n", label_num);
             gen(node->then);
-            printf("  jmp .Lcontinue%03d\n", label_num);
-            printf(".Lbreak%03d:\n", label_num);
+            printf("  jmp .Lcontinue%d\n", label_num);
+            printf(".Lbreak%d:\n", label_num);
 
             brkseq = brk;
             contseq = cont;
@@ -462,22 +462,22 @@ static void gen(Node *node) {
             if(node->init) {
                 gen(node->init);
             }
-            printf(".Lbegin%03d:\n", label_num);
+            printf(".Lbegin%d:\n", label_num);
             if(node->cond) {
                 // cond==NULLの場合.LendXXXラベルへのジャンプ処理を出力しない(=無限ループ)
                 gen(node->cond);
                 printf("  pop rax\n");
                 printf("  cmp rax, 0\n");
-                printf("  je  .Lbreak%03d\n", label_num);
+                printf("  je  .Lbreak%d\n", label_num);
             }
 
             gen(node->then);
-            printf(".Lcontinue%03d:\n", label_num);
+            printf(".Lcontinue%d:\n", label_num);
             if(node->post) {
                 gen(node->post);
             }
-            printf("  jmp .Lbegin%03d\n", label_num);
-            printf(".Lbreak%03d:\n", label_num);
+            printf("  jmp .Lbegin%d\n", label_num);
+            printf(".Lbreak%d:\n", label_num);
 
             brkseq = brk;
             contseq = cont;
@@ -549,13 +549,13 @@ static void gen(Node *node) {
             if(brkseq == 0) {
                 error("不正なbreakです");
             }
-            printf("  jmp .Lbreak%03d\n", brkseq);
+            printf("  jmp .Lbreak%d\n", brkseq);
             return;
         case ND_CONTINUE:
             if(contseq == 0) {
                 error("不正なcontinueです");
             }
-            printf("  jmp .Lcontinue%03d\n", contseq);
+            printf("  jmp .Lcontinue%d\n", contseq);
             return;
         case ND_GOTO:
             printf("  jmp .Llabel.%s.%s\n", func_name, node->label_name);
